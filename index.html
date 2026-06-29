@@ -9,7 +9,7 @@
 <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--panel-bg:#fff;--border:#e5e4e7;--card-muted:rgba(244,243,236,0.6);--text:#6b6375;--text-h:#08060d;--accent:#aa3bff;--accent-bg:rgba(170,59,255,0.1);--accent-border:rgba(170,59,255,0.5);--input-bg:#fff;--card-bg:#c62828;--shadow:rgba(0,0,0,0.08)0 4px 12px}
+:root{--panel-bg:#fff;--border:#e5e4e7;--card-muted:rgba(244,243,236,0.6);--text:#6b6375;--text-h:#08060d;--accent:#aa3bff;--accent-bg:rgba(170,59,255,0.1);--accent-border:rgba(170,59,255,0.5);--input-bg:#fff;--shadow:rgba(0,0,0,0.08)0 4px 12px}
 @media(prefers-color-scheme:dark){
 :root{--panel-bg:#16171d;--border:#2e303a;--card-muted:rgba(47,48,58,0.5);--text:#9ca3af;--text-h:#f3f4f6;--accent:#c084fc;--accent-bg:rgba(192,132,252,0.15);--accent-border:rgba(192,132,252,0.5);--input-bg:#1f2028;--shadow:rgba(0,0,0,0.4)0 4px 12px}
 }
@@ -84,156 +84,147 @@ body{font:16px/1.45 system-ui,'Segoe UI',Roboto,sans-serif;background:var(--pane
 .primary-button{width:100%;background:linear-gradient(135deg,var(--accent),#4f46e5);color:#fff;border:none;padding:12px 18px;border-radius:14px;cursor:pointer;font:inherit;font-size:15px;font-weight:700;transition:opacity 0.2s,transform 0.2s}
 .primary-button:hover{transform:translateY(-1px);opacity:0.92}
 .primary-button:disabled{opacity:0.5;cursor:not-allowed;transform:none}
-.label-group{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
-.label-group h3{margin:0;font-size:15px}
-.choice-list{margin-bottom:12px}
-@media(min-width:900px){
-#root{display:grid;grid-template-columns:1fr;gap:16px}
-.builder-panel{order:2}
-.board-panel{order:0}
-}
-@media(min-width:1100px){
-#root{grid-template-columns:1fr;gap:20px}
-}
-@media(min-width:768px){
-.fastest-grid{grid-template-columns:repeat(3,1fr)}
-}
+@media(min-width:768px){.fastest-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
 <body><div id="root"></div>
 <script type="text/babel">
-const{useState,useEffect,useMemo,useCallback}=React
+window.addEventListener('error',function(e){console.error('GLOBAL_ERROR:',e.message,e.filename,e.lineno)})
+const{useState,useEffect,useMemo}=React
 
-const STORAGE_KEY='hk-bus-dashboard-v2'
-const createId=()=>typeof crypto!=='undefined'&&'randomUUID'in crypto?crypto.randomUUID():`id-${Date.now()}-${Math.random().toString(36).slice(2,8)}`
-const createDefaultTab=(index=1)=>({id:createId(),name:`分頁 ${index}`,favourites:[]})
-const createInitialState=()=>{try{const raw=localStorage.getItem(STORAGE_KEY);if(!raw)throw Error();const p=JSON.parse(raw);if(Array.isArray(p.tabs)&&p.tabs.length>0)return p;throw Error()}catch{const tab=createDefaultTab();return{tabs:[tab],activeTabId:tab.id}}}
-const formatCountdown=eta=>{const m=Math.round((new Date(eta).getTime()-Date.now())/60000);return m<=0?'即將到站':`${m} 分鐘`}
-const favouriteKey=f=>(`${f.operator}:${f.route}:${f.direction}:${f.serviceType}:${f.stopId}`).toLowerCase()
+const STORAGE_KEY='hk-bus-db-v3'
+const COLLAPSE_KEY='hk-bus-col-v2'
+let idCounter=0
+function uid(){return'id-'+(++idCounter)+'-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
+function defTab(i){return{id:uid(),name:'分頁 '+i,favourites:[]}}
+function loadState(){try{var raw=localStorage.getItem(STORAGE_KEY);if(raw){var p=JSON.parse(raw);if(p&&Array.isArray(p.tabs)&&p.tabs.length)return p}}catch(e){console.error('loadState',e)}var t=defTab(1);return{tabs:[t],activeTabId:t.id}}
+function loadCollapsed(){try{var raw=localStorage.getItem(COLLAPSE_KEY);if(raw){var p=JSON.parse(raw);if(p&&typeof p==='object')return p}}catch(e){console.error('loadCollapsed',e)}return{}}
+function fmt(eta){if(!eta)return'--';var m=Math.round((new Date(eta).getTime()-Date.now())/60000);return m<=0?'即將到站':m+' 分鐘'}
+function fkey(f){return f.operator+':'+f.route+':'+f.direction+':'+f.serviceType+':'+f.stopId}
+function dirCode(d){return d==='outbound'?'O':'I'}
+function boundText(b){return b==='O'?'outbound':'inbound'}
 
-const fetchJson=async(url,opts)=>{const r=await fetch(url,opts||{headers:{accept:'application/json'}});if(!r.ok)throw new Error(`API 錯誤 ${r.status}`);return r.json()}
-const fetchSafe=async(url)=>{try{const r=await fetch(url,{headers:{accept:'application/json'}});if(!r.ok)return null;return await r.json()}catch{return null}}
-const fetchKmbRoutes=()=>fetchJson('https://data.etabus.gov.hk/v1/transport/kmb/route/')
-const fetchCitybusRoutes=()=>fetchSafe('https://rt.data.gov.hk/v2/transport/citybus/route/CTB')
-const fetchKmbStops=()=>fetchJson('https://data.etabus.gov.hk/v1/transport/kmb/stop')
-const fetchKmbRouteStops=(route,direction,st)=>fetchJson(`https://data.etabus.gov.hk/v1/transport/kmb/route-stop/${encodeURIComponent(route)}/${encodeURIComponent(direction)}/${encodeURIComponent(st)}`)
-const fetchCitybusRouteStops=(route,direction)=>fetchSafe(`https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/${encodeURIComponent(route)}/${encodeURIComponent(direction)}`)
-const fetchCitybusStop=stopId=>fetchSafe(`https://rt.data.gov.hk/v2/transport/citybus/stop/${encodeURIComponent(stopId)}`)
-const fetchKmbEta=(stopId,route,st)=>fetchJson(`https://data.etabus.gov.hk/v1/transport/kmb/eta/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}/${encodeURIComponent(st)}`)
-const fetchCitybusEta=(stopId,route)=>fetchSafe(`https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}`)
-
-const operatorName=op=>op==='kmb'?'九巴/龍運':'城巴'
-const directionLabel=(d,o,i)=>d==='O'?'去程':'回程'
-const normalizeDir=d=>d==='outbound'?'O':'I'
-const boundText=b=>b==='O'?'outbound':'inbound'
+async function getJSON(url){var r=await fetch(url,{headers:{accept:'application/json'}});if(!r.ok)throw new Error('API '+r.status);return r.json()}
+async function getSafe(url){try{var r=await fetch(url,{headers:{accept:'application/json'}});if(!r.ok)return null;return r.json()}catch(e){return null}}
+async function getKmbR(){return getJSON('https://data.etabus.gov.hk/v1/transport/kmb/route/')}
+async function getCtbR(){return getSafe('https://rt.data.gov.hk/v2/transport/citybus/route/CTB')}
+async function getKmbS(){return getJSON('https://data.etabus.gov.hk/v1/transport/kmb/stop')}
+async function getKmbRS(r,d,st){return getJSON('https://data.etabus.gov.hk/v1/transport/kmb/route-stop/'+encodeURIComponent(r)+'/'+encodeURIComponent(d)+'/'+encodeURIComponent(st))}
+async function getCtbRS(r,d){return getSafe('https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/'+encodeURIComponent(r)+'/'+encodeURIComponent(d))}
+async function getCtbStop(s){return getSafe('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(s))}
+async function getKmbE(s,r,st){return getJSON('https://data.etabus.gov.hk/v1/transport/kmb/eta/'+encodeURIComponent(s)+'/'+encodeURIComponent(r)+'/'+encodeURIComponent(st))}
+async function getCtbE(s,r){return getSafe('https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/'+encodeURIComponent(s)+'/'+encodeURIComponent(r))}
 
 function App(){
-const initialState=useMemo(createInitialState,[])
-const[tabs,setTabs]=useState(initialState.tabs)
-const[activeTabId,setActiveTabId]=useState(initialState.activeTabId)
-const[collapsedMap,setCollapsedMap]=useState(()=>{try{return JSON.parse(localStorage.getItem('hk-bus-collapsed-v2')||'{}')}catch{return{}}})
-const[routeQuery,setRouteQuery]=useState('')
-const[routeResults,setRouteResults]=useState([])
-const[selectedRoute,setSelectedRoute]=useState(null)
-const[directions,setDirections]=useState([])
-const[selectedDir,setSelectedDir]=useState(null)
-const[stops,setStops]=useState([])
-const[selectedStopId,setSelectedStopId]=useState('')
-const[stopFilter,setStopFilter]=useState('')
-const[searching,setSearching]=useState(false)
-const[loadingDir,setLoadingDir]=useState(false)
-const[loadingStops,setLoadingStops]=useState(false)
-const[err,setErr]=useState(null)
-const[etaMap,setEtaMap]=useState({})
+var init=useMemo(loadState,[])
+var[T,setT]=useState(init.tabs)
+var[A,setA]=useState(init.activeTabId)
+var[C,setC]=useState(loadCollapsed)
+var[q,setQ]=useState('')
+var[rr,setRr]=useState([])
+var[sr,setSr]=useState(null)
+var[dr,setDr]=useState([])
+var[sd,setSd]=useState(null)
+var[st,setSt]=useState([])
+var[si,setSi]=useState('')
+var[sf,setSf]=useState('')
+var[bu,setBu]=useState(false)
+var[ld,setLd]=useState(false)
+var[ls,setLs]=useState(false)
+var[er,setEr]=useState(null)
+var[em,setEm]=useState({})
 
-const activeTab=tabs.find(t=>t.id===activeTabId)??tabs[0]
-const selectedStop=stops.find(s=>s.stopId===selectedStopId)??null
-const filteredStops=stops.filter(s=>{const q=stopFilter.trim().toLowerCase();return!q||`${s.seq}${s.nameTc}${s.nameEn}`.toLowerCase().includes(q)})
+var at=T.find(function(t){return t.id===A})||T[0]
+var ss=st.find(function(s){return s.stopId===si})||null
+var fs=st.filter(function(s){var k=sf.trim().toLowerCase();return!k||(String(s.seq)+s.nameTc+s.nameEn).toLowerCase().indexOf(k)!==-1})
 
-useEffect(()=>{localStorage.setItem(STORAGE_KEY,JSON.stringify({tabs,activeTabId}))},[tabs,activeTabId])
-useEffect(()=>{localStorage.setItem('hk-bus-collapsed-v2',JSON.stringify(collapsedMap))},[collapsedMap])
-useEffect(()=>{if(!tabs.some(t=>t.id===activeTabId))setActiveTabId(tabs[0]?.id??'')},[tabs,activeTabId])
+useEffect(function(){try{localStorage.setItem(STORAGE_KEY,JSON.stringify({tabs:T,activeTabId:A}))}catch(e){console.error('saveTabs',e)}},[T,A])
+useEffect(function(){try{localStorage.setItem(COLLAPSE_KEY,JSON.stringify(C))}catch(e){console.error('saveColl',e)}},[C])
+useEffect(function(){if(!T.some(function(t){return t.id===A}))setA(T[0]?T[0].id:'')},[T,A])
 
-useEffect(()=>{const t=setTimeout(async()=>{setSearching(true);setErr(null);try{const q=routeQuery.trim().toLowerCase();const[kmbData,ctbData]=await Promise.all([fetchKmbRoutes(),fetchCitybusRoutes()]);const all=[];const dedup={}
-if(kmbData)kmbData.data.forEach(r=>{const key=r.route;if(!dedup[key]){dedup[key]=1;all.push({operator:'kmb',operatorName:'九巴/龍運',route:r.route,summary:`${r.orig_tc}->${r.dest_tc}`,matchText:`${r.route}${r.orig_tc}${r.dest_tc}${r.orig_en}${r.dest_en}`.toLowerCase()})}})
-if(ctbData)ctbData.data.forEach(r=>{const key=r.route;if(!dedup[key]){dedup[key]=1;all.push({operator:'ctb',operatorName:'城巴',route:r.route,summary:`${r.orig_tc}->${r.dest_tc}`,matchText:`${r.route}${r.orig_tc}${r.dest_tc}${r.orig_en}${r.dest_en}`.toLowerCase()})}})
-all.sort((a,b)=>a.route.localeCompare(b.route,'en',{numeric:true}))
-setRouteResults(q?all.filter(i=>i.matchText.includes(q)):all.slice(0,80))}catch(e){setErr(e.message)}finally{setSearching(false)}},350);return()=>clearTimeout(t)},[routeQuery])
+useEffect(function(){var t=setTimeout(async function(){setBu(true);setEr(null)
+try{var w=q.trim().toLowerCase();var[kmb,ctb]=await Promise.all([getKmbR(),getCtbR()]);var a=[],d={}
+if(kmb)kmb.data.forEach(function(r){if(!d[r.route]){d[r.route]=1;a.push({op:'kmb',on:'九巴/龍運',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+' '+r.orig_tc+' '+r.dest_tc+' '+r.orig_en+' '+r.dest_en).toLowerCase())}}})
+if(ctb)ctb.data.forEach(function(r){if(!d[r.route]){d[r.route]=1;a.push({op:'ctb',on:'城巴',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+' '+r.orig_tc+' '+r.dest_tc+' '+r.orig_en+' '+r.dest_en).toLowerCase())}}})
+a.sort(function(a,b){return a.rt.localeCompare(b.rt,'en',{numeric:true})});setRr(w?a.filter(function(i){return i.mt.indexOf(w)!==-1}):a.slice(0,80))}catch(e){setEr(e.message)}finally{setBu(false)}},350);return function(){clearTimeout(t)}},[q])
 
-useEffect(()=>{if(!selectedRoute){setDirections([]);setSelectedDir(null);setStops([]);setSelectedStopId('');return}
-let c=false;const load=async()=>{setLoadingDir(true);setErr(null);setSelectedDir(null);setStops([]);setSelectedStopId('')
-try{if(selectedRoute.operator==='kmb'){const r=await fetchKmbRoutes();const opts=r.data.filter(x=>x.route.toLowerCase()===selectedRoute.route.toLowerCase()).map(x=>({direction:boundText(x.bound),directionCode:x.bound,serviceType:x.service_type,label:`${x.orig_tc}->${x.dest_tc}${x.service_type!=='1'?`(特${x.service_type})`:''}`,stopCount:0}));const dedup={};const out=[];opts.forEach(o=>{const k=`${o.direction}-${o.serviceType}`;if(!dedup[k]){dedup[k]=1;out.push(o)}});if(!c)setDirections(out)}
-else{const dirs=[];for(const d of['outbound','inbound']){try{const r=await fetchCitybusRouteStops(selectedRoute.route,d);if(r&&r.data&&r.data.length>0){const[first,last]=await Promise.all([(fetchCitybusStop(r.data[0].stop).then(x=>x&&x.data||null)),(fetchCitybusStop(r.data[r.data.length-1].stop).then(x=>x&&x.data||null))]);dirs.push({direction:d,directionCode:d==='outbound'?'O':'I',serviceType:'1',label:`${(first&&first.name_tc)||'起點'}->${(last&&last.name_tc)||'終點'}`,stopCount:r.data.length})}}catch{}}if(!c)setDirections(dirs)}
-}catch(e){if(!c)setErr(e.message)}finally{if(!c)setLoadingDir(false)}}
-load();return()=>{c=true}},selectedRoute?[selectedRoute.operator,selectedRoute.route]:[])
+useEffect(function(){if(!sr){setDr([]);setSd(null);setSt([]);setSi('');return}
+var cancelled=false
+async function load(){setLd(true);setEr(null);setSd(null);setSt([]);setSi('')
+try{if(sr.op==='kmb'){var r=await getKmbR();var opts=r.data.filter(function(x){return x.route.toLowerCase()===sr.rt.toLowerCase()}).map(function(x){return{direction:boundText(x.bound),directionCode:x.bound,serviceType:x.service_type,label:x.orig_tc+' -> '+x.dest_tc+(x.service_type!=='1'?'(特'+x.service_type+')':''),stopCount:0}});var dp={},out=[];opts.forEach(function(o){var k=o.direction+'-'+o.serviceType;if(!dp[k]){dp[k]=1;out.push(o)}});if(!cancelled)setDr(out)}
+else{var dirs=[];for(var i=0;i<2;i++){var d=['outbound','inbound'][i];try{var cr=await getCtbRS(sr.rt,d);if(cr&&cr.data&&cr.data.length>0){var fr=await getCtbStop(cr.data[0].stop);var lr=await getCtbStop(cr.data[cr.data.length-1].stop);var fn=fr&&fr.data?fr.data.name_tc:'起點';var ln=lr&&lr.data?lr.data.name_tc:'終點';dirs.push({direction:d,directionCode:d==='outbound'?'O':'I',serviceType:'1',label:fn+' -> '+ln,stopCount:cr.data.length})}}catch(e){}}if(!cancelled)setDr(dirs)}
+}catch(e){if(!cancelled)setEr(e.message)}finally{if(!cancelled)setLd(false)}}
+load();return function(){cancelled=true}},[sr&&sr.op,sr&&sr.rt])
 
-useEffect(()=>{if(!selectedRoute||!selectedDir){setStops([]);setSelectedStopId('');return}
-let c=false;const load=async()=>{setLoadingStops(true);setErr(null);setSelectedStopId('')
-try{if(selectedRoute.operator==='kmb'){const[routeStopData,allStopsData]=await Promise.all([fetchKmbRouteStops(selectedRoute.route,selectedDir.direction,selectedDir.serviceType),fetchKmbStops()]);const stopMap={};allStopsData.data.forEach(s=>{stopMap[s.stop]={nameTc:s.name_tc,nameEn:s.name_en}})
-const out=routeStopData.data.map(r=>({stopId:r.stop,seq:Number(r.seq),nameTc:stopMap[r.stop]?.nameTc??`站${r.stop.slice(0,6)}`,nameEn:stopMap[r.stop]?.nameEn??`Stop ${r.stop.slice(0,6)}`}));if(!c)setStops(out)}
-else{const r=await fetchCitybusRouteStops(selectedRoute.route,selectedDir.direction);if(!r||!r.data){if(!c)setStops([]);return}const out=await Promise.all(r.data.map(async rec=>{try{const s=await fetchCitybusStop(rec.stop).then(x=>x&&x.data);return{stopId:rec.stop,seq:rec.seq,nameTc:(s&&s.name_tc)||`站${rec.stop}`,nameEn:(s&&s.name_en)||`Stop ${rec.stop}`}}catch{return{stopId:rec.stop,seq:rec.seq,nameTc:`站${rec.stop}`,nameEn:`Stop ${rec.stop}`}}}));if(!c)setStops(out)}
-}catch(e){if(!c)setErr(e.message)}finally{if(!c)setLoadingStops(false)}}
-load();return()=>{c=true}},[selectedRoute?.route,selectedRoute?.operator,selectedDir?.direction,selectedDir?.serviceType])
+useEffect(function(){if(!sr||!sd){setSt([]);setSi('');return}
+var cancelled=false
+async function load(){setLs(true);setEr(null);setSi('')
+try{if(sr.op==='kmb'){var[rs,as]=await Promise.all([getKmbRS(sr.rt,sd.direction,sd.serviceType),getKmbS()]);var sm={};as.data.forEach(function(s){sm[s.stop]={n:s.name_tc,e:s.name_en}})
+var out=rs.data.map(function(r){return{stopId:r.stop,seq:Number(r.seq),nameTc:sm[r.stop]?sm[r.stop].n:'站'+r.stop.slice(0,6),nameEn:sm[r.stop]?sm[r.stop].e:'Stop '+r.stop.slice(0,6)}});if(!cancelled)setSt(out)}
+else{var cr=await getCtbRS(sr.rt,sd.direction);if(!cr||!cr.data){if(!cancelled)setSt([]);return}var out2=[];for(var i=0;i<cr.data.length;i++){var rec=cr.data[i];try{var s=await getCtbStop(rec.stop);out2.push({stopId:rec.stop,seq:rec.seq,nameTc:s&&s.data?s.data.name_tc:'站'+rec.stop,nameEn:s&&s.data?s.data.name_en:'Stop '+rec.stop})}catch(e){out2.push({stopId:rec.stop,seq:rec.seq,nameTc:'站'+rec.stop,nameEn:'Stop '+rec.stop})}}if(!cancelled)setSt(out2)}
+}catch(e){if(!cancelled)setEr(e.message)}finally{if(!cancelled)setLs(false)}}
+load();return function(){cancelled=true}},[sr&&sr.rt,sr&&sr.op,sd&&sd.direction,sd&&sd.serviceType])
 
-useEffect(()=>{if(!activeTab||activeTab.favourites.length===0)return
-let c=false;const refresh=async()=>{setEtaMap(p=>{const n={...p};activeTab.favourites.forEach(f=>{n[f.id]={...n[f.id],loading:true}});return n})
-const results=await Promise.all(activeTab.favourites.map(async f=>{try{if(f.operator==='kmb'){const r=await fetchKmbEta(f.stopId,f.route,f.serviceType);const items=r.data.filter(x=>x.dir===normalizeDir(f.direction)&&String(x.service_type)===f.serviceType&&x.eta).sort((a,b)=>a.eta_seq-b.eta_seq).slice(0,3).map(x=>({eta:x.eta,etaSeq:x.eta_seq,remarkTc:x.rmk_tc||'',remarkEn:x.rmk_en||'',destinationTc:x.dest_tc,destinationEn:x.dest_en}));return[f.id,{loading:false,items,error:null,fetchedAt:new Date().toISOString()}]}
-else{const r=await fetchCitybusEta(f.stopId,f.route);if(!r||!r.data)return[f.id,{loading:false,items:[],error:null,fetchedAt:new Date().toISOString()}];const items=r.data.filter(x=>x.dir===normalizeDir(f.direction)&&x.eta).sort((a,b)=>a.eta_seq-b.eta_seq).slice(0,3).map(x=>({eta:x.eta,etaSeq:x.eta_seq,remarkTc:x.rmk_tc||'',remarkEn:x.rmk_en||'',destinationTc:x.dest_tc,destinationEn:x.dest_en}));return[f.id,{loading:false,items,error:null,fetchedAt:new Date().toISOString()}]}
-}catch(e){return[f.id,{loading:false,items:[],error:e.message,fetchedAt:null}]}}))
-if(!c)setEtaMap(p=>{const n={...p};results.forEach(([id,s])=>n[id]=s);return n})}
-refresh();const timer=setInterval(refresh,30000);return()=>{c=true;clearInterval(timer)}},[activeTab])
+useEffect(function(){if(!at||!at.favourites||at.favourites.length===0)return
+var cancelled=false
+async function refresh(){try{setEm(function(p){var n={};for(var k in p)n[k]=p[k];at.favourites.forEach(function(f){n[f.id]={loading:true,items:[],error:null,ts:null}});return n})
+var ps=at.favourites.map(function(f){return new Promise(function(resolve){setTimeout(function(){resolve()},0)})});await Promise.all(ps)
+var results=await Promise.all(at.favourites.map(async function(f){try{if(f.op==='kmb'){var r=await getKmbE(f.stopId,f.rt,f.serviceType);var items=r.data.filter(function(x){return x.dir===dirCode(f.direction)&&String(x.service_type)===f.serviceType&&x.eta}).sort(function(a,b){return a.eta_seq-b.eta_seq}).slice(0,3).map(function(x){return{eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}});return[f.id,{loading:false,items:items,error:null,ts:new Date().toISOString()}]}
+else{var r=await getCtbE(f.stopId,f.rt);if(!r||!r.data)return[f.id,{loading:false,items:[],error:null,ts:new Date().toISOString()}];var items=r.data.filter(function(x){return x.dir===dirCode(f.direction)&&x.eta}).sort(function(a,b){return a.eta_seq-b.eta_seq}).slice(0,3).map(function(x){return{eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}});return[f.id,{loading:false,items:items,error:null,ts:new Date().toISOString()}]}
+}catch(e){return[f.id,{loading:false,items:[],error:e.message,ts:null}]}}))
+if(!cancelled)setEm(function(p){var n={};for(var k in p)n[k]=p[k];results.forEach(function(r){n[r[0]]=r[1]});return n})}catch(e){console.error('etaRefresh',e)}}
+refresh();var timer=setInterval(refresh,30000);return function(){cancelled=true;clearInterval(timer)}},[at])
 
-const addTab=()=>{const t=createDefaultTab(tabs.length+1);setTabs(p=>[...p,t]);setActiveTabId(t.id)}
-const removeTab=id=>{if(tabs.length===1)return;setTabs(p=>p.filter(t=>t.id!==id))}
-const updateTabName=name=>{setTabs(p=>p.map(t=>t.id===activeTab.id?{...t,name}:t))}
-const addFavourite=()=>{if(!activeTab||!selectedRoute||!selectedDir||!selectedStop)return
-const nf={id:createId(),operator:selectedRoute.operator,operatorName:selectedRoute.operatorName,route:selectedRoute.route,routeSummary:selectedRoute.summary,direction:selectedDir.direction,directionLabel:selectedDir.label,serviceType:selectedDir.serviceType,stopId:selectedStop.stopId,stopNameTc:selectedStop.nameTc,stopNameEn:selectedStop.nameEn}
-setTabs(p=>p.map(t=>{if(t.id!==activeTab.id)return t;if(t.favourites.some(x=>favouriteKey(x)===favouriteKey(nf)))return t;return{...t,favourites:[...t.favourites,nf]}}))}
-const removeFavourite=id=>{setTabs(p=>p.map(t=>t.id===activeTab.id?{...t,favourites:t.favourites.filter(x=>x.id!==id)}:t));setCollapsedMap(p=>{const n={...p};delete n[id];return n})}
-const toggleCollapsed=id=>setCollapsedMap(p=>({...p,[id]:!p[id]}))
+function addTab(){var t=defTab(T.length+1);setT(function(p){return p.concat([t])});setA(t.id)}
+function remTab(id){if(T.length<2)return;setT(function(p){return p.filter(function(t){return t.id!==id})})}
+function upName(v){setT(function(p){return p.map(function(t){return t.id===at.id?Object.assign({},t,{name:v}):t})})}
+function addFav(){if(!at||!sr||!sd||!ss)return
+var nf={id:uid(),op:sr.op,on:sr.on,rt:sr.rt,sm:sr.sm,dir:sd.direction,dl:sd.label,stype:sd.serviceType,sid:ss.stopId,snt:ss.nameTc,sne:ss.nameEn}
+setT(function(p){return p.map(function(t){if(t.id!==at.id)return t;if(t.favourites.some(function(x){return fkey(x)===fkey(nf)}))return t;return Object.assign({},t,{favourites:t.favourites.concat([nf])})})})}
+function remFav(id){setT(function(p){return p.map(function(t){return t.id===at.id?Object.assign({},t,{favourites:t.favourites.filter(function(x){return x.id!==id})}):t})});setC(function(p){var n={};for(var k in p)n[k]=p[k];delete n[id];return n})}
+function togCol(id){setC(function(p){var n={};for(var k in p)n[k]=p[k];n[id]=!n[id];return n})}
 
-const fastestRoutes=useMemo(()=>{if(!activeTab||activeTab.favourites.length<3)return[]
-const byRoute={};activeTab.favourites.forEach(f=>{const state=etaMap[f.id];if(!state||state.loading||state.error||state.items.length===0)return
-const first=state.items[0];if(!first)return;const key=f.route;if(!byRoute[key]||new Date(first.eta).getTime()<new Date(byRoute[key].eta).getTime())byRoute[key]={favouriteId:f.id,route:f.route,stopNameTc:f.stopNameTc,operatorName:f.operatorName,eta:first.eta}})
-const sorted=Object.values(byRoute).sort((a,b)=>new Date(a.eta).getTime()-new Date(b.eta).getTime());if(sorted.length<3)return[];return sorted.slice(0,3)
-},[activeTab,etaMap])
+var fast=useMemo(function(){if(!at||!at.favourites||at.favourites.length<3)return[]
+var br={};at.favourites.forEach(function(f){var s=em[f.id];if(!s||s.loading||s.error||!s.items||!s.items.length)return;var first=s.items[0];if(!first||!first.eta)return;if(!br[f.rt]||new Date(first.eta).getTime()<new Date(br[f.rt].eta).getTime())br[f.rt]={fid:f.id,rt:f.rt,snt:f.snt,on:f.on,eta:first.eta}})
+var sv=[];for(var k in br)sv.push(br[k]);sv.sort(function(a,b){return new Date(a.eta).getTime()-new Date(b.eta).getTime()});if(sv.length<3)return[];return sv.slice(0,3)
+},[at,em])
 
 return(<>
 <div className="board-panel">
 <div className="tabs-bar">
-<div className="tab-list">{tabs.map(t=><button key={t.id} type="button" className={`tab-button${t.id===activeTab.id?' active':''}`} onClick={()=>setActiveTabId(t.id)}>{t.name}</button>)}</div>
-<div className="tab-actions"><button type="button" className="secondary-button" onClick={addTab}>新增分頁</button><button type="button" className="secondary-button" onClick={()=>removeTab(activeTab.id)} disabled={tabs.length===1}>刪除分頁</button></div>
+<div className="tab-list">{T.map(function(t){return(<button key={t.id} type="button" className={'tab-button'+(t.id===A?' active':'')} onClick={function(){setA(t.id)}}>{t.name}</button>)})}</div>
+<div className="tab-actions"><button type="button" className="secondary-button" onClick={addTab}>新增分頁</button><button type="button" className="secondary-button" onClick={function(){remTab(at.id)}} disabled={T.length<2}>刪除分頁</button></div>
 </div>
-<div className="tab-meta"><label className="field"><span>分頁名稱</span><input value={activeTab.name} onChange={e=>updateTabName(e.target.value)}/></label><p className="muted">資料保存在瀏覽器本機。</p></div>
-{fastestRoutes.length===3?<div className="fastest-panel"><div className="fastest-panel-header"><h3>最快到站 3 條路線</h3><p>根據這個分頁每個站的首班 ETA 排序</p></div><div className="fastest-grid">{fastestRoutes.map((item,i)=><div key={item.favouriteId} className="fastest-card"><span className="fastest-rank">#{i+1}</span><strong>{item.route}</strong><span>{item.stopNameTc}</span><small>{item.operatorName} · {formatCountdown(item.eta)} · {new Date(item.eta).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'})}</small></div>)}</div></div>:null}
-<div className="favourite-grid">{activeTab.favourites.map(f=>{const es=etaMap[f.id]||{loading:true,items:[],error:null,fetchedAt:null};const coll=collapsedMap[f.id]||false;const vis=coll?es.items.slice(0,1):es.items
+<div className="tab-meta"><label className="field"><span>分頁名稱</span><input value={at.name} onChange={function(e){upName(e.target.value)}}/></label><p className="muted">資料保存在瀏覽器本機。</p></div>
+{fast.length===3?<div className="fastest-panel"><div className="fastest-panel-header"><h3>最快到站 3 條路線</h3><p>根據這個分頁每個站的首班 ETA 排序</p></div><div className="fastest-grid">{fast.map(function(item,i){return(<div key={item.fid} className="fastest-card"><span className="fastest-rank">#{i+1}</span><strong>{item.rt}</strong><span>{item.snt}</span><small>{item.on} · {fmt(item.eta)} · {new Date(item.eta).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'})}</small></div>)})}</div></div>:null}
+<div className="favourite-grid">{at.favourites.map(function(f){var s=em[f.id]||{loading:true,items:[],error:null,ts:null};var c=C[f.id]||false;var vi=c?s.items.slice(0,1):s.items
 return(<div key={f.id} className="eta-card">
-<div className="eta-card-header"><div><div className="badge-row"><span className="route-badge"><span className="route-badge-text">{f.route}</span></span><span className="operator-badge">{f.operatorName}</span></div><h3>{f.stopNameTc}</h3><p>{f.directionLabel}</p></div>
-<div className="eta-card-actions"><button type="button" className="icon-button" onClick={()=>toggleCollapsed(f.id)}>{coll?'顯示全部':'只顯示首班'}</button><button type="button" className="icon-button" onClick={()=>removeFavourite(f.id)}>移除</button></div>
+<div className="eta-card-header"><div><div className="badge-row"><span className="route-badge"><span className="route-badge-text">{f.rt}</span></span><span className="operator-badge">{f.on}</span></div><h3>{f.snt}</h3><p>{f.dl}</p></div>
+<div className="eta-card-actions"><button type="button" className="icon-button" onClick={function(){togCol(f.id)}}>{c?'顯示全部':'只顯示首班'}</button><button type="button" className="icon-button" onClick={function(){remFav(f.id)}}>移除</button></div>
 </div>
-<div className="eta-list">{es.loading?<p className="muted">更新 ETA 中...</p>:null}{es.error?<p className="error-text">{es.error}</p>:null}{!es.loading&&!es.error&&es.items.length===0?<p className="muted">暫時沒有未來班次資料。</p>:null}{vis.map(item=><div key={`${f.id}-${item.etaSeq}`} className="eta-row"><div><strong>{formatCountdown(item.eta)}</strong><span>{new Date(item.eta).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'})}</span></div><div><span>{item.destinationTc}</span><small>{item.remarkTc||'正常班次'}</small></div></div>)}</div>
-<p className="eta-footer">{f.routeSummary}{es.fetchedAt?` · 更新於 ${new Date(es.fetchedAt).toLocaleTimeString('zh-HK')}`:''}</p>
+<div className="eta-list">{s.loading?<p className="muted">更新 ETA 中...</p>:null}{s.error?<p className="error-text">{s.error}</p>:null}{!s.loading&&!s.error&&(!s.items||s.items.length===0)?<p className="muted">暫時沒有未來班次資料。</p>:null}{vi.map(function(item){return(<div key={f.id+'-'+item.seq} className="eta-row"><div><strong>{fmt(item.eta)}</strong><span>{item.eta?new Date(item.eta).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}):'--'}</span></div><div><span>{item.dt}</span><small>{item.rt||'正常班次'}</small></div></div>)})}</div>
+<p className="eta-footer">{f.sm}{s.ts?' · 更新於 '+new Date(s.ts).toLocaleTimeString('zh-HK'):''}</p>
 </div>)})}
-{activeTab.favourites.length===0?<div className="empty-card"><h3>這個分頁還沒有站點</h3><p>往前拉加入新站點，搜尋路線、選方向和站點，然後加入目前分頁即可。</p></div>:null}
+{!at.favourites||at.favourites.length===0?<div className="empty-card"><h3>這個分頁還沒有站點</h3><p>往下拉加入新站點，搜尋路線、選方向和站點，然後加入目前分頁即可。</p></div>:null}
 </div>
 </div>
 
 <div className="builder-panel">
 <div className="panel-header"><h2>加入新站點</h2><p>搜尋路線，再選方向與站點。</p></div>
-<label className="field"><span>搜尋路線</span><input value={routeQuery} onChange={e=>setRouteQuery(e.target.value)} placeholder="例如 1A、970、機場"/></label>
-<div className="result-list">{searching?<p className="muted">搜尋中...</p>:null}{err?<p className="error-text">{err}</p>:null}{routeResults.map(item=><button key={`${item.operator}-${item.route}`} type="button" className={`result-card${selectedRoute?.operator===item.operator&&selectedRoute.route===item.route?' selected':''}`} onClick={()=>{setSelectedRoute(item);setErr(null)}}><strong>{item.operatorName} {item.route}</strong><span>{item.summary}</span></button>)}</div>
+<label className="field"><span>搜尋路線</span><input value={q} onChange={function(e){setQ(e.target.value)}} placeholder="例如 1A、970、機場"/></label>
+<div className="result-list">{bu?<p className="muted">搜尋中...</p>:null}{er?<p className="error-text">{er}</p>:null}{rr.map(function(item){return(<button key={item.op+'-'+item.rt} type="button" className={'result-card'+(sr&&sr.op===item.op&&sr.rt===item.rt?' selected':'')} onClick={function(){setSr(item);setEr(null)}}><strong>{item.on} {item.rt}</strong><span>{item.sm}</span></button>)})}</div>
 
-{selectedRoute?<div className="section-block"><h3>方向</h3>{loadingDir?<p className="muted">載入方向中...</p>:null}
-<div className="choice-list">{directions.map(item=><button key={`${item.direction}-${item.serviceType}`} type="button" className={`choice-chip${selectedDir?.direction===item.direction&&selectedDir.serviceType===item.serviceType?' selected':''}`} onClick={()=>setSelectedDir(item)}><strong>{item.label}</strong><span>{item.direction==='outbound'?'去程':'回程'}{item.serviceType!=='1'?`·班次${item.serviceType}`:''}{item.stopCount>0?`·${item.stopCount}站`:''}</span></button>)}
-{!loadingDir&&selectedRoute&&directions.length===0?<p className="muted">這條路線目前沒有方向資料。</p>:null}
+{sr?<div className="section-block"><h3>方向</h3>{ld?<p className="muted">載入方向中...</p>:null}
+<div className="choice-list">{dr.map(function(item){return(<button key={item.direction+'-'+item.serviceType} type="button" className={'choice-chip'+(sd&&sd.direction===item.direction&&sd.serviceType===item.serviceType?' selected':'')} onClick={function(){setSd(item)}}><strong>{item.label}</strong><span>{(item.direction==='outbound'?'去程':'回程')+(item.serviceType!=='1'?'·班次'+item.serviceType:'')+(item.stopCount>0?'·'+item.stopCount+'站':'')}</span></button>)})}
+{!ld&&sr&&dr.length===0?<p className="muted">這條路線目前沒有方向資料。</p>:null}
 </div></div>:null}
 
-{selectedRoute&&selectedDir?<div className="section-block"><div className="section-title"><h3>站點</h3><input value={stopFilter} onChange={e=>setStopFilter(e.target.value)} placeholder="過濾站點"/></div>{loadingStops?<p className="muted">載入站點中...</p>:null}
-<div className="stop-list">{filteredStops.map(item=><button key={item.stopId} type="button" className={`stop-row${selectedStopId===item.stopId?' selected':''}`} onClick={()=>setSelectedStopId(item.stopId)}><span className="stop-seq">{item.seq}</span><span className="stop-name">{item.nameTc}</span></button>)}</div>
+{sr&&sd?<div className="section-block"><div className="section-title"><h3>站點</h3><input value={sf} onChange={function(e){setSf(e.target.value)}} placeholder="過濾站點"/></div>{ls?<p className="muted">載入站點中...</p>:null}
+<div className="stop-list">{fs.map(function(item){return(<button key={item.stopId} type="button" className={'stop-row'+(si===item.stopId?' selected':'')} onClick={function(){setSi(item.stopId)}}><span className="stop-seq">{item.seq}</span><span className="stop-name">{item.nameTc}</span></button>)})}</div>
 </div>:null}
 
-{err?<p className="error-text">{err}</p>:null}
-<button type="button" className="primary-button" onClick={addFavourite} disabled={!selectedRoute||!selectedDir||!selectedStop}>加入目前分頁</button>
+{er?<p className="error-text">{er}</p>:null}
+<button type="button" className="primary-button" onClick={addFav} disabled={!sr||!sd||!ss}>加入目前分頁</button>
 </div>
 </>)
 }
