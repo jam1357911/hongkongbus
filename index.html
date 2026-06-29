@@ -127,9 +127,23 @@ function render(){var m=Q('root').innerHTML='';/* trigger re-read */renderAll()}
 var mr=Q('result-list'), md=Q('dir-block'), mdr=Q('dir-list'), ms=Q('stop-block'), mst=Q('stop-list'), mab=Q('add-btn'),msf=Q('stop-filter')
 var mtb=Q('tabs-bar'), mtn=Q('tab-name'), mfg=Q('favourite-grid'), mfp=Q('fastest-panel'), mfgg=Q('fastest-grid')
 
-function loadState(){try{var r=localStorage.getItem(K);if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;return}}}catch(e){}var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}
-function loadCol(){try{var r=localStorage.getItem(CK);if(r){var p=JSON.parse(r);if(p&&typeof p==='object')M.collapsed=p}}catch(e){}}
-function saveAll(){try{localStorage.setItem(K,JSON.stringify({tabs:M.tabs,activeTabId:M.activeTabId}))}catch(e){}try{localStorage.setItem(CK,JSON.stringify(M.collapsed))}catch(e){}}
+function dbGet(k,cb){try{var r=localStorage.getItem(k);if(r)return cb(r)}catch(e){}var req=indexedDB.open('BusDB',1)
+req.onupgradeneeded=function(e){e.target.result.createObjectStore('store')}
+req.onsuccess=function(e){var tx=e.target.result.transaction('store','readonly');var r=tx.objectStore('store').get(k);r.onsuccess=function(){if(r.result)cb(r.result);else cb(null)};r.onerror=function(){cb(null)}};req.onerror=function(){cb(null)}}
+function dbSet(k,v){try{localStorage.setItem(k,v);return}catch(e){}var req=indexedDB.open('BusDB',1)
+req.onupgradeneeded=function(e){e.target.result.createObjectStore('store')}
+req.onsuccess=function(e){var tx=e.target.result.transaction('store','readwrite');tx.objectStore('store').put(v,k)}}
+
+var savedTabs=null,savedCol=null
+function loadAll(){dbGet(K,function(r){if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;savedTabs=r}else{setDefaults()}savedTabs=savedTabs||'';checkInit()})})
+dbGet(CK,function(r){if(r){var p=JSON.parse(r);if(p&&typeof p==='object')M.collapsed=p;savedCol=r}else{savedCol='{}'}checkInit()})}
+function setDefaults(){var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}
+function checkInit(){if(savedTabs===null||savedCol===null)return;if(!savedTabs){var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}renderBoard();refreshEtas();finishedInit=true}
+function saveAll(){var ts=JSON.stringify({tabs:M.tabs,activeTabId:M.activeTabId});var cs=JSON.stringify(M.collapsed);dbSet(K,ts);dbSet(CK,cs)}
+
+var finishedInit=false
+function loadState(){if(finishedInit)return}
+function loadCol(){if(finishedInit)return}
 
 function at(){return M.tabs.find(t=>t.id===M.activeTabId)||M.tabs[0]}
 
@@ -249,7 +263,7 @@ var nf={id:uid(),op:M.selectedRoute.op,on:M.selectedRoute.on,rt:M.selectedRoute.
 if(t.favourites.some(x=>fk(x)===fk(nf)))return
 t.favourites.push(nf);renderBoard();refreshEtas();saveAll()})
 
-function init(){loadState();loadCol();var t=at();if(!t||!M.tabs.length){var t2=defTab(1);M.tabs=[t2];M.activeTabId=t2.id}renderBoard();refreshEtas();setInterval(refreshEtas,30000)}
+function init(){loadAll();setInterval(refreshEtas,30000)}
 init()
 })()
 </script>
