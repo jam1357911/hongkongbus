@@ -1,0 +1,32 @@
+{
+  "name": "bus",
+  "version": "1.0.0",
+  "description": "香港巴士到站時間網站，支援分頁收藏與 Cloud Run 部署",
+  "main": "dist/server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "dev:server": "tsx watch server/index.ts",
+    "dev:client": "npm --prefix frontend run dev -- --host 0.0.0.0",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "npm --prefix frontend run build",
+    "build:server": "tsc -p tsconfig.json",
+    "start": "node dist/server/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.0.1",
+    "concurrently": "^10.0.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
+  }
+}

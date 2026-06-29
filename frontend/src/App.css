@@ -1,0 +1,414 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 28px;
+}
+
+.builder-panel,
+.board-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  box-shadow: var(--shadow);
+}
+
+.builder-panel,
+.board-panel {
+  padding: 24px;
+}
+
+.panel-header,
+.section-block {
+  margin-bottom: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.field span,
+.section-title h3,
+.section-block h3 {
+  color: var(--text-h);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.field input,
+.section-title input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--input-bg);
+  color: var(--text-h);
+  padding: 12px 14px;
+  font: inherit;
+}
+
+.result-list,
+.choice-list,
+.stop-list,
+.favourite-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.result-list,
+.stop-list {
+  max-height: 320px;
+  overflow: auto;
+}
+
+.result-card,
+.choice-chip,
+.stop-row,
+.primary-button,
+.secondary-button,
+.tab-button,
+.icon-button {
+  border: 1px solid transparent;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.result-card,
+.choice-chip,
+.stop-row {
+  text-align: left;
+  border-radius: 16px;
+  padding: 14px;
+  background: var(--card-muted);
+  color: var(--text-h);
+}
+
+.result-card:hover,
+.choice-chip:hover,
+.stop-row:hover,
+.primary-button:hover,
+.secondary-button:hover,
+.tab-button:hover,
+.icon-button:hover {
+  border-color: var(--accent-border);
+  transform: translateY(-1px);
+}
+
+.result-card.selected,
+.choice-chip.selected,
+.stop-row.selected,
+.tab-button.active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.result-card strong,
+.choice-chip strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.result-card span,
+.choice-chip span,
+.eta-card p,
+.muted,
+.eta-footer,
+.stop-name {
+  color: var(--text);
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.stop-row {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.stop-seq {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--text-h);
+  font-weight: 700;
+}
+
+.primary-button,
+.secondary-button,
+.tab-button,
+.icon-button {
+  cursor: pointer;
+  font: inherit;
+}
+
+.primary-button,
+.secondary-button {
+  padding: 12px 18px;
+  border-radius: 14px;
+}
+
+.primary-button {
+  width: 100%;
+  background: linear-gradient(135deg, var(--accent), #4f46e5);
+  color: white;
+}
+
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.secondary-button,
+.tab-button,
+.icon-button {
+  background: var(--card-muted);
+  color: var(--text-h);
+}
+
+.tabs-bar,
+.tab-actions,
+.tab-list,
+.badge-row,
+.eta-card-header,
+.eta-card-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.tabs-bar {
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.tab-list {
+  flex-wrap: wrap;
+}
+
+.tab-button {
+  padding: 10px 14px;
+  border-radius: 999px;
+}
+
+.tab-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: end;
+  margin-bottom: 20px;
+}
+
+.tab-meta .field {
+  flex: 1;
+}
+
+.fastest-panel {
+  margin-bottom: 20px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--card-muted);
+}
+
+.fastest-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 14px;
+}
+
+.fastest-panel-header p {
+  color: var(--text);
+}
+
+.fastest-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.fastest-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+}
+
+.fastest-card strong {
+  font-size: 24px;
+  color: var(--text-h);
+}
+
+.fastest-card span,
+.fastest-card small {
+  color: var(--text);
+}
+
+.fastest-rank {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--accent-bg);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.eta-card {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 18px;
+  background: #c62828;
+}
+
+.eta-card-header {
+  justify-content: space-between;
+  align-items: start;
+  margin-bottom: 16px;
+}
+
+.route-badge,
+.operator-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.route-badge {
+  background: var(--accent-bg);
+  color: #ffffff;
+  padding: 8px 12px;
+}
+
+.route-badge-text {
+  font-size: 29px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.operator-badge {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff6f6;
+}
+
+.eta-list {
+  display: grid;
+  gap: 10px;
+}
+
+.eta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.eta-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.eta-row strong,
+.eta-card h3,
+.empty-card h3 {
+  color: var(--text-h);
+}
+
+.eta-card h3,
+.eta-card p,
+.eta-card .eta-footer,
+.eta-card .muted,
+.eta-card .eta-row span,
+.eta-card .eta-row small {
+  color: #fff6f6;
+}
+
+.eta-card .icon-button {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.eta-card .icon-button:hover {
+  border-color: rgba(255, 255, 255, 0.55);
+}
+
+.eta-row small {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.eta-footer {
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.empty-card {
+  padding: 32px;
+  border-radius: 20px;
+  border: 1px dashed var(--border);
+  background: var(--card-muted);
+  text-align: center;
+}
+
+.muted,
+.error-text {
+  font-size: 14px;
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+@media (max-width: 1100px) {
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 16px;
+  }
+
+  .tab-meta,
+  .eta-row {
+    flex-direction: column;
+  }
+
+  .section-title,
+  .eta-card-header,
+  .fastest-panel-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fastest-grid {
+    grid-template-columns: 1fr;
+  }
+}
