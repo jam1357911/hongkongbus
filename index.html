@@ -111,7 +111,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 var K='hk-bus-db-v3', CK='hk-bus-col-v2'
 var M={tabs:[], activeTabId:'', collapsed:{}, routeResults:[], selectedRoute:null, directions:[], selectedDir:null, stops:[], selectedStopId:'', etaMap:{}}
 
-function el(t,c,ch){var e=document.createElement(t);if(c)for(var k in c){if(k==='cls')e.className=c[k];else if(k==='on')e.addEventListener(c[k].split(' ')[0],c[k].split(' ')[1]);else e[k]=c[k]}if(typeof ch==='string')e.textContent=ch;else if(ch)for(var i=0;i<ch.length;i++)e.appendChild(ch[i]);return e}
+function el(t,c,ch){var e=document.createElement(t);if(c)for(var k in c){var v=c[k];if(k==='cls')e.className=v;else if(k==='ev')for(var en in v)e.addEventListener(en,v[en]);else e[k]=v}if(typeof ch==='string')e.textContent=ch;else if(ch)for(var i=0;i<ch.length;i++)e.appendChild(ch[i]);return e}
 function uid(){return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
 function defTab(i){return{id:uid(),name:'分頁 '+i,favourites:[]}}
 function fmt(eta){if(!eta)return'--';var m=Math.round((new Date(eta).getTime()-Date.now())/60000);return m<=0?'即將到站':m+' 分鐘'}
@@ -136,10 +136,10 @@ function at(){return M.tabs.find(t=>t.id===M.activeTabId)||M.tabs[0]}
 function renderTabs(){
 mtb.innerHTML=''
 var l=el('div',{cls:'tab-list'})
-M.tabs.forEach(function(t){var b=el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),on:'click '+function(){M.activeTabId=t.id;renderBoard()}},t.name);l.appendChild(b)})
+M.tabs.forEach(function(t){var b=el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),ev:{click:function(){M.activeTabId=t.id;renderBoard()}}},t.name);l.appendChild(b)})
 var a=el('div',{cls:'tab-actions'})
-a.appendChild(el('button',{type:'button',cls:'secondary-button',on:'click '+function(){var t=defTab(M.tabs.length+1);M.tabs.push(t);M.activeTabId=t.id;renderBoard()}},'新增分頁'))
-a.appendChild(el('button',{type:'button',cls:'secondary-button',on:'click '+function(){if(M.tabs.length<2)return;M.tabs=M.tabs.filter(t=>t.id!==M.activeTabId);M.activeTabId=M.tabs[0]?M.tabs[0].id:'';renderBoard()}},'刪除分頁'))
+a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){var t=defTab(M.tabs.length+1);M.tabs.push(t);M.activeTabId=t.id;renderBoard()}}},'新增分頁'))
+a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){if(M.tabs.length<2)return;M.tabs=M.tabs.filter(t=>t.id!==M.activeTabId);M.activeTabId=M.tabs[0]?M.tabs[0].id:'';renderBoard()}}},'刪除分頁'))
 mtb.appendChild(l);mtb.appendChild(a)
 }
 
@@ -158,7 +158,7 @@ var t=at();if(!t)return
 if(!t.favourites.length){mfg.innerHTML='<div class="empty-card"><h3>這個分頁還沒有站點</h3><p>往下拉加入新站點，搜尋路線、選方向和站點，然後加入目前分頁即可。</p></div>';return}
 t.favourites.forEach(function(f){var s=M.etaMap[f.id]||{loading:true,items:[]};var c=M.collapsed[f.id]||false;var vi=c?s.items.slice(0,1):s.items
 var badge=el('div',{cls:'badge-row'},[el('span',{cls:'route-badge'},[el('span',{cls:'route-badge-text'},f.rt)]),el('span',{cls:'operator-badge'},f.on)])
-var hdr=el('div',{cls:'eta-card-header'},[el('div',null,[badge,el('h3',null,f.snt),el('p',null,f.dl)]),el('div',{cls:'eta-card-actions'},[el('button',{cls:'icon-button',on:'click '+function(){M.collapsed[f.id]=!M.collapsed[f.id];renderFavourites();saveAll()}},c?'顯示全部':'只顯示首班'),el('button',{cls:'icon-button',on:'click '+function(){var ta=at();ta.favourites=ta.favourites.filter(x=>x.id!==f.id);delete M.etaMap[f.id];delete M.collapsed[f.id];renderBoard();saveAll()}},'移除')])])
+var hdr=el('div',{cls:'eta-card-header'},[el('div',null,[badge,el('h3',null,f.snt),el('p',null,f.dl)]),el('div',{cls:'eta-card-actions'},[el('button',{cls:'icon-button',ev:{click:function(){M.collapsed[f.id]=!M.collapsed[f.id];renderFavourites();saveAll()}}},c?'顯示全部':'只顯示首班'),el('button',{cls:'icon-button',ev:{click:function(){var ta=at();ta.favourites=ta.favourites.filter(x=>x.id!==f.id);delete M.etaMap[f.id];delete M.collapsed[f.id];renderBoard();saveAll()}}},'移除')])])
 var elist=el('div',{cls:'eta-list'})
 if(s.loading)elist.appendChild(el('p',{cls:'muted'},'更新 ETA 中...'))
 else if(s.error)elist.appendChild(el('p',{cls:'error-text'},s.error))
@@ -191,7 +191,7 @@ var searchTimer=null
 Q('route-search').addEventListener('input',function(){clearTimeout(searchTimer)
 var q=Q('route-search').value
 searchTimer=setTimeout(function(){mr.innerHTML='<span class="muted">搜尋中...</span>';var w=q.trim().toLowerCase();var all=[],seen={},c=0
-function done(){if(++c<2)return;all.sort((a,b)=>a.rt.localeCompare(b.rt,'en',{numeric:true}));mr.innerHTML='';var filtered=w?all.filter(i=>i.mt.indexOf(w)!==-1):all.slice(0,80);filtered.forEach(function(i){mr.appendChild(el('button',{cls:'result-card'+(M.selectedRoute&&M.selectedRoute.op===i.op&&M.selectedRoute.rt===i.rt?' selected':''),on:'click '+function(){M.selectedRoute=i;renderRouteSelected()}},[el('strong',null,i.on+' '+i.rt),el('span',null,i.sm)]))})}
+function done(){if(++c<2)return;all.sort((a,b)=>a.rt.localeCompare(b.rt,'en',{numeric:true}));mr.innerHTML='';var filtered=w?all.filter(i=>i.mt.indexOf(w)!==-1):all.slice(0,80);filtered.forEach(function(i){mr.appendChild(el('button',{cls:'result-card'+(M.selectedRoute&&M.selectedRoute.op===i.op&&M.selectedRoute.rt===i.rt?' selected':''),ev:{click:function(){M.selectedRoute=i;renderRouteSelected()}}},[el('strong',null,i.on+' '+i.rt),el('span',null,i.sm)]))})}
 gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,kmb){
 if(!e&&kmb)kmb.data.forEach(function(r){if(!seen[r.route]){seen[r.route]=1;all.push({op:'kmb',on:'九巴/龍運',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+r.orig_tc+r.dest_tc+r.orig_en+r.dest_en).toLowerCase()})}})
 done()})
@@ -217,7 +217,7 @@ gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(cr.dat
 gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(cr.data[cr.data.length-1].stop),function(e3,lr){p2++;var fn=fr&&fr.data?fr.data.name_tc:'起點';var ln=lr&&lr.data?lr.data.name_tc:'終點';dirs[dir==='outbound'?0:1]={direction:dir,directionCode:dir==='outbound'?'O':'I',serviceType:'1',label:fn+' -> '+ln,stopCount:cr.data.length};check()})})})}}
 
 function renderDirs(out){mdr.innerHTML=''
-out.forEach(function(d){mdr.appendChild(el('button',{cls:'choice-chip'+(M.selectedDir&&M.selectedDir.direction===d.direction&&M.selectedDir.serviceType===d.serviceType?' selected':''),on:'click '+function(){M.selectedDir=d;renderDirSelected();renderStops()}},[el('strong',null,d.label),el('span',null,(d.direction==='outbound'?'去程':'回程')+(d.serviceType!=='1'?'·班次'+d.serviceType:'')+(d.stopCount>0?'·'+d.stopCount+'站':''))]))})
+out.forEach(function(d){mdr.appendChild(el('button',{cls:'choice-chip'+(M.selectedDir&&M.selectedDir.direction===d.direction&&M.selectedDir.serviceType===d.serviceType?' selected':''),ev:{click:function(){M.selectedDir=d;renderDirSelected();renderStops()}}},[el('strong',null,d.label),el('span',null,(d.direction==='outbound'?'去程':'回程')+(d.serviceType!=='1'?'·班次'+d.serviceType:'')+(d.stopCount>0?'·'+d.stopCount+'站':''))]))})
 if(!out.length)mdr.innerHTML='<span class="muted">這條路線目前沒有方向資料。</span>'
 }
 
@@ -239,7 +239,7 @@ var out=[],cnt=0,don=false,total=cr.data.length
 cr.data.forEach(function(rec,i){
 gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(rec.stop),function(e2,s){cnt++;out[i]={stopId:rec.stop,seq:rec.seq,nameTc:s&&s.data?s.data.name_tc:'站'+rec.stop,nameEn:s&&s.data?s.data.name_en:'Stop '+rec.stop};if(!don&&cnt>=total){don=true;M.stops=out;renderStopList()}})})})}
 
-function renderStopList(){mst.innerHTML='';filtered().forEach(function(s){mst.appendChild(el('button',{cls:'stop-row'+(M.selectedStopId===s.stopId?' selected':''),on:'click '+function(){M.selectedStopId=s.stopId;renderStopList();mab.disabled=false}},[el('span',{cls:'stop-seq'},s.seq),el('span',{cls:'stop-name'},s.nameTc)]))})}
+function renderStopList(){mst.innerHTML='';filtered().forEach(function(s){mst.appendChild(el('button',{cls:'stop-row'+(M.selectedStopId===s.stopId?' selected':''),ev:{click:function(){M.selectedStopId=s.stopId;renderStopList();mab.disabled=false}}},[el('span',{cls:'stop-seq'},s.seq),el('span',{cls:'stop-name'},s.nameTc)]))})}
 
 function filtered(){var q=Q('stop-filter').value.trim().toLowerCase();return M.stops.filter(function(s){return!q||(String(s.seq)+s.nameTc+s.nameEn).toLowerCase().indexOf(q)!==-1})}
 msf.addEventListener('input',function(){renderStopList()})
