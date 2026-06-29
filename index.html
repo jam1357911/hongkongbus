@@ -135,8 +135,8 @@ req.onupgradeneeded=function(e){e.target.result.createObjectStore('store')}
 req.onsuccess=function(e){var tx=e.target.result.transaction('store','readwrite');tx.objectStore('store').put(v,k)}}catch(e){}}
 
 var savedTabs=null,savedCol=null,finishedInit=false
-function loadAll(){dbGet(K,function(r){if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;savedTabs=r}else{setDefaults()}savedTabs=savedTabs||'';checkInit()})})
-dbGet(CK,function(r){if(r){var p=JSON.parse(r);if(p&&typeof p==='object')M.collapsed=p;savedCol=r}else{savedCol='{}'}checkInit()})}
+function loadAll(){dbGet(K,function(r){if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;savedTabs=r}else{setDefaults()}savedTabs=savedTabs||'';checkInit()}});
+dbGet(CK,function(r){if(r){var p=JSON.parse(r);if(p&&typeof p==='object')M.collapsed=p;savedCol=r}else{savedCol='{}'}checkInit()});
 function setDefaults(){var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}
 function checkInit(){if(savedTabs===null||savedCol===null)return;if(!savedTabs){var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}renderBoard();refreshEtas();finishedInit=true}
 function saveAll(){var ts=JSON.stringify({tabs:M.tabs,activeTabId:M.activeTabId});var cs=JSON.stringify(M.collapsed);dbSet(K,ts);dbSet(CK,cs)}
