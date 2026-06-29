@@ -398,16 +398,16 @@ mab.addEventListener('click',function(){
 })
 
 // ---- persistence ----
-function loadAll(){
-  function cb1(r){if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;savedTabs=r}else{setDefaults()}savedTabs=savedTabs||'';checkInit()}}
-  function cb2(r){if(r){var p=JSON.parse(r);if(p&&typeof p==='object')M.collapsed=p;savedCol=r}else{savedCol='{}'}checkInit()}
-  function tryLS(k,cb){try{var r=localStorage.getItem(k);if(r)return cb(r)}catch(e){}tryIDB(k,cb)}
-  function tryIDB(k,cb){try{var req=indexedDB.open('BusDB',1);req.onupgradeneeded=function(e){e.target.result.createObjectStore('store')};req.onsuccess=function(e){var tx=e.target.result.transaction('store','readonly');var r=tx.objectStore('store').get(k);r.onsuccess=function(){if(r.result)cb(r.result);else cb(null)};r.onerror=function(){cb(null)}};req.onerror=function(){cb(null)}}catch(e){cb(null)}}
-  var savedTabs=null,savedCol=null
-  function checkInit(){if(savedTabs===null||savedCol===null)return;if(!savedTabs)setDefaults();renderBoard();refreshEtas();finishedInit=true}
-  function setDefaults(){var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}
-  tryLS(K,cb1);tryLS(CK,cb2)
-}
+ function loadAll(){
+   function cb1(r){var ok=r;if(ok){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId}else{setDefaults()}}savedTabs=ok||'';checkInit()}
+   function cb2(r){if(r){var p=JSON.parse(r);if(p&&typeof p==='object')M.collapsed=p}savedCol=r||'';checkInit()}
+   function tryLS(k,cb){try{var r=localStorage.getItem(k);if(r)return cb(r);fallback(k,cb)}catch(e){fallback(k,cb)}}
+   function fallback(k,cb){try{var req=indexedDB.open('BusDB',1);req.onupgradeneeded=function(e){e.target.result.createObjectStore('store')};req.onsuccess=function(e){var tx=e.target.result.transaction('store','readonly');var r=tx.objectStore('store').get(k);r.onsuccess=function(){cb(r.result||null)};r.onerror=function(){cb(null)}};req.onerror=function(){cb(null)}}catch(e){cb(null)}}
+   var savedTabs=null,savedCol=null
+   function checkInit(){if(savedTabs===null||savedCol===null)return;if(!savedTabs)setDefaults();renderBoard();refreshEtas()}
+   function setDefaults(){var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}
+   tryLS(K,cb1);tryLS(CK,cb2)
+ }
 
 function saveAll(){
   function set(k,v){try{localStorage.setItem(k,v);return}catch(e){}try{var req=indexedDB.open('BusDB',1);req.onupgradeneeded=function(e){e.target.result.createObjectStore('store')};req.onsuccess=function(e){var tx=e.target.result.transaction('store','readwrite');tx.objectStore('store').put(v,k)}}catch(e){}}
