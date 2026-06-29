@@ -196,7 +196,7 @@ t.favourites.forEach(function(f){M.etaMap[f.id]=M.etaMap[f.id]||{};M.etaMap[f.id
 renderFavourites()
 t.favourites.forEach(function(f){var fn=f.op==='kmb'?gt:gs;var url=f.op==='kmb'?'https://data.etabus.gov.hk/v1/transport/kmb/eta/'+encodeURIComponent(f.sid)+'/'+encodeURIComponent(f.rt)+'/'+encodeURIComponent(f.stype):'https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/'+encodeURIComponent(f.sid)+'/'+encodeURIComponent(f.rt)
 fn(url,function(err,r){if(err){M.etaMap[f.id]={loading:false,items:[],error:err.message,ts:null}}else if(!r||!r.data){M.etaMap[f.id]={loading:false,items:[],error:null,ts:new Date().toISOString()}}else{var items=r.data.filter(function(x){var ok=x.dir===dc(f.dir)&&x.eta;if(f.op==='kmb')ok=ok&&String(x.service_type)===f.stype;return ok}).sort((a,b)=>a.eta_seq-b.eta_seq).slice(0,3).map(x=>({eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}));M.etaMap[f.id]={loading:false,items:items,error:null,ts:new Date().toISOString()}}
-renderFavourites();if(t.favourites.length>=3)renderFastest()})})
+renderFavourites();if(t.favourites.length>=3)renderFastest()})}
 }
 
 var searchTimer=null
@@ -261,7 +261,7 @@ var nf={id:uid(),op:M.selectedRoute.op,on:M.selectedRoute.on,rt:M.selectedRoute.
 if(t.favourites.some(x=>fk(x)===fk(nf)))return
 t.favourites.push(nf);renderBoard();refreshEtas();saveAll()})
 
-function init(){loadAll();setInterval(refreshEtas,30000)}
+function init(){loadAll();setInterval(refreshEtas,30000)}}
 init()
 })()
 </script>
