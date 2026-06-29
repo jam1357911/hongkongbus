@@ -115,7 +115,7 @@ var M={tabs:[],activeTabId:'',collapsed:{},selectedRoute:null,selectedDir:null,s
 function el(t,c){
   var e=document.createElement(t)
   if(c)for(var k in c){var v=c[k];if(k==='cls')e.className=v;else if(k==='ev')for(var en in v)e.addEventListener(en,v[en]);else e[k]=v}
-  for(var i=2;i<arguments.length;i++){var ch=arguments[i];if(typeof ch==='string')e.textContent=ch;else if(ch&&ch.length)for(var j=0;j<ch.length;j++)e.appendChild(ch[j]);else if(ch)e.appendChild(ch)}
+  for(var i=2;i<arguments.length;i++){var ch=arguments[i];if(typeof ch==='string'||typeof ch==='number')e.textContent=ch;else if(ch&&ch.nodeType)e.appendChild(ch);else if(ch&&ch.length)for(var j=0;j<ch.length;j++)e.appendChild(ch[j])}
   return e
 }
 
