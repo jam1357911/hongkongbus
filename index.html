@@ -4,16 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
 <title>香港巴士到站時間</title>
-<script>
-/**
- * @license React
- * react.production.min.js
- * Copyright (c) Facebook, Inc. and its affiliates.
- * MIT license
- */
-(function(){'use strict';(function(c,x){"object"===typeof exports&&"undefined"!==typeof module?x(exports):"function"===typeof define&&define.amd?define(["exports"],x):(c=c||self,x(c.React={}))})(this,function(c){function x(a){if(null===a||"object"!==typeof a)return null;a=V&&a[V]||a["@@iterator"];return"function"===typeof a?a:null}function w(a,b,e){this.props=a;this.context=b;this.refs=W;this.updater=e||X}function Y(){}function K(a,b,e){this.props=a;this.context=b;this.refs=W;this.updater=e||X}function Z(a,b,e){var m,d={},c=null,h=null;if(null!=b)for(m in void 0!==b.ref&&(h=b.ref),void 0!==b.key&&(c=""+b.key),b)aa.call(b,m)&&!ba.hasOwnProperty(m)&&(d[m]=b[m]);var l=arguments.length-2;if(1===l)d.children=e;else if(1<l){for(var f=Array(l),k=0;k<l;k++)f[k]=arguments[k+2];d.children=f}if(a&&a.defaultProps)for(m in l=a.defaultProps,l)void 0===d[m]&&(d[m]=l[m]);return{$$typeof:y,type:a,key:c,ref:h,props:d,_owner:L.current}}function oa(a,b){return{$$typeof:y,type:a.type,key:b,ref:a.ref,props:a.props,_owner:a._owner}}function M(a){return"object"===typeof a&&null!==a&&a.$$typeof===y}function pa(a){var b={"=":"=0",":":"=2"};return"$"+a.replace(/[=:]/g,function(a){return b[a]})}function N(a,b){return"object"===typeof a&&null!==a&&null!=a.key?pa(""+a.key):b.toString(36)}function B(a,b,e,m,d){var c=typeof a;if("undefined"===c||"boolean"===c)a=null;var h=!1;if(null===a)h=!0;else switch(c){case "string":case "number":h=!0;break;case "object":switch(a.$$typeof){case y:case qa:h=!0}}if(h)return h=a,d=d(h),a=""===m?"."+N(h,0):m,ca(d)?(e="",null!=a&&(e=a.replace(da,"$&/")+"/"),B(d,b,e,"",function(a){return a})):null!=d&&(M(d)&&(d=oa(d,e+(!d.key||h&&h.key===d.key?"":(""+d.key).replace(da,"$&/")+"/")+a)),b.push(d)),1;h=0;m=""===m?".":m+":";if(ca(a))for(var l=0;l<a.length;l++){c=a[l];var f=m+N(c,l);h+=B(c,b,e,f,d)}else if(f=x(a),"function"===typeof f)for(a=f.call(a),l=0;!(c=a.next()).done;)c=c.value,f=m+N(c,l++),h+=B(c,b,e,f,d);else if("object"===c)throw b=String(a),Error("Objects are not valid as a React child (found: "+("[object Object]"===b?"object with keys {"+Object.keys(a).join(", ")+"}":b)+"). If you meant to render a collection of children, use an array instead.");return h}function C(a,b,e){if(null==a)return a;var c=[],d=0;B(a,c,"","",function(a){return b.call(e,a,d++)});return c}function ra(a){if(-1===a._status){var b=a._result;b=b();b.then(function(b){if(0===a._status||-1===a._status)a._status=1,a._result=b},function(b){if(0===a._status||-1===a._status)a._status=2,a._result=b});-1===a._status&&(a._status=0,a._result=b)}if(1===a._status)return a._result.default;throw a._result;}function O(a,b){var e=a.length;a.push(b);a:for(;0<e;){var c=e-1>>>1,d=a[c];if(0<D(d,b))a[c]=b,a[e]=d,e=c;else break a}}function p(a){return 0===a.length?null:a[0]}function E(a){if(0===a.length)return null;var b=a[0],e=a.pop();if(e!==b){a[0]=e;a:for(var c=0,d=a.length,k=d>>>1;c<k;){var h=2*(c+1)-1,l=a[h],f=h+1,g=a[f];if(0>D(l,e))f<d&&0>D(g,l)?(a[c]=g,a[f]=e,c=f):(a[c]=l,a[h]=e,c=h);else if(f<d&&0>D(g,e))a[c]=g,a[f]=e,c=f;else break a}}return b}function D(a,b){var c=a.sortIndex-b.sortIndex;return 0!==c?c:a.id-b.id}function P(a){for(var b=p(r);null!==b;){if(null===b.callback)E(r);else if(b.startTime<=a)E(r),b.sortIndex=b.expirationTime,O(q,b);else break;b=p(r)}}function Q(a){z=!1;P(a);if(!u)if(null!==p(q))u=!0,R(S);else{var b=p(r);null!==b&&T(Q,b.startTime-a)}}function S(a,b){u=!1;z&&(z=!1,ea(A),A=-1);F=!0;var c=k;try{P(b);for(n=p(q);null!==n&&(!(n.expirationTime>b)||a&&!fa());){var m=n.callback;if("function"===typeof m){n.callback=null;k=n.priorityLevel;var d=m(n.expirationTime<=b);b=v();"function"===typeof d?n.callback=d:n===p(q)&&E(q);P(b)}else E(q);n=p(q)}if(null!==n)var g=!0;else{var h=p(r);null!==h&&T(Q,h.startTime-b);g=!1}return g}finally{n=null,k=c,F=!1}}function fa(){return v()-ha<ia?!1:!0}function R(a){G=a;H||(H=!0,I())}function T(a,b){A=ja(function(){a(v())},b)}function ka(a){throw Error("act(...) is not supported in production builds of React.");}var y=Symbol.for("react.element"),qa=Symbol.for("react.portal"),sa=Symbol.for("react.fragment"),ta=Symbol.for("react.strict_mode"),ua=Symbol.for("react.profiler"),va=Symbol.for("react.provider"),wa=Symbol.for("react.context"),xa=Symbol.for("react.forward_ref"),ya=Symbol.for("react.suspense"),za=Symbol.for("react.memo"),Aa=Symbol.for("react.lazy"),V=Symbol.iterator,X={isMounted:function(a){return!1},enqueueForceUpdate:function(a,b,c){},enqueueReplaceState:function(a,b,c,m){},enqueueSetState:function(a,b,c,m){}},la=Object.assign,W={};w.prototype.isReactComponent={};w.prototype.setState=function(a,b){if("object"!==typeof a&&"function"!==typeof a&&null!=a)throw Error("setState(...): takes an object of state variables to update or a function which returns an object of state variables.");this.updater.enqueueSetState(this,a,b,"setState")};w.prototype.forceUpdate=function(a){this.updater.enqueueForceUpdate(this,a,"forceUpdate")};Y.prototype=w.prototype;var t=K.prototype=new Y;t.constructor=K;la(t,w.prototype);t.isPureReactComponent=!0;var ca=Array.isArray,aa=Object.prototype.hasOwnProperty,L={current:null},ba={key:!0,ref:!0,__self:!0,__source:!0},da=/\/+/g,g={current:null},J={transition:null};if("object"===typeof performance&&"function"===typeof performance.now){var Ba=performance;var v=function(){return Ba.now()}}else{var ma=Date,Ca=ma.now();v=function(){return ma.now()-Ca}}var q=[],r=[],Da=1,n=null,k=3,F=!1,u=!1,z=!1,ja="function"===typeof setTimeout?setTimeout:null,ea="function"===typeof clearTimeout?clearTimeout:null,na="undefined"!==typeof setImmediate?setImmediate:null;"undefined"!==typeof navigator&&void 0!==navigator.scheduling&&void 0!==navigator.scheduling.isInputPending&&navigator.scheduling.isInputPending.bind(navigator.scheduling);var H=!1,G=null,A=-1,ia=5,ha=-1,U=function(){if(null!==G){var a=v();ha=a;var b=!0;try{b=G(!0,a)}finally{b?I():(H=!1,G=null)}}else H=!1};if("function"===typeof na)var I=function(){na(U)};else if("undefined"!==typeof MessageChannel){t=new MessageChannel;var Ea=t.port2;t.port1.onmessage=U;I=function(){Ea.postMessage(null)}}else I=function(){ja(U,0)};t={ReactCurrentDispatcher:g,ReactCurrentOwner:L,ReactCurrentBatchConfig:J,Scheduler:{__proto__:null,unstable_ImmediatePriority:1,unstable_UserBlockingPriority:2,unstable_NormalPriority:3,unstable_IdlePriority:5,unstable_LowPriority:4,unstable_runWithPriority:function(a,b){switch(a){case 1:case 2:case 3:case 4:case 5:break;default:a=3}var c=k;k=a;try{return b()}finally{k=c}},unstable_next:function(a){switch(k){case 1:case 2:case 3:var b=3;break;default:b=k}var c=k;k=b;try{return a()}finally{k=c}},unstable_scheduleCallback:function(a,b,c){var e=v();"object"===typeof c&&null!==c?(c=c.delay,c="number"===typeof c&&0<c?e+c:e):c=e;switch(a){case 1:var d=-1;break;case 2:d=250;break;case 5:d=1073741823;break;case 4:d=1E4;break;default:d=5E3}d=c+d;a={id:Da++,callback:b,priorityLevel:a,startTime:c,expirationTime:d,sortIndex:-1};c>e?(a.sortIndex=c,O(r,a),null===p(q)&&a===p(r)&&(z?(ea(A),A=-1):z=!0,T(Q,c-e))):(a.sortIndex=d,O(q,a),u||F||(u=!0,R(S)));return a},unstable_cancelCallback:function(a){a.callback=null},unstable_wrapCallback:function(a){var b=k;return function(){var c=k;k=b;try{return a.apply(this,arguments)}finally{k=c}}},unstable_getCurrentPriorityLevel:function(){return k},unstable_shouldYield:fa,unstable_requestPaint:function(){},unstable_continueExecution:function(){u||F||(u=!0,R(S))},unstable_pauseExecution:function(){},unstable_getFirstCallbackNode:function(){return p(q)},get unstable_now(){return v},unstable_forceFrameRate:function(a){0>a||125<a?console.error("forceFrameRate takes a positive int between 0 and 125, forcing frame rates higher than 125 fps is not supported"):ia=0<a?Math.floor(1E3/a):5},unstable_Profiling:null}};c.Children={map:C,forEach:function(a,b,c){C(a,function(){b.apply(this,arguments)},c)},count:function(a){var b=0;C(a,function(){b++});return b},toArray:function(a){return C(a,function(a){return a})||[]},only:function(a){if(!M(a))throw Error("React.Children.only expected to receive a single React element child.");return a}};c.Component=w;c.Fragment=sa;c.Profiler=ua;c.PureComponent=K;c.StrictMode=ta;c.Suspense=ya;c.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED=t;c.act=ka;c.cloneElement=function(a,b,c){if(null===a||void 0===a)throw Error("React.cloneElement(...): The argument must be a React element, but you passed "+a+".");var e=la({},a.props),d=a.key,k=a.ref,h=a._owner;if(null!=b){void 0!==b.ref&&(k=b.ref,h=L.current);void 0!==b.key&&(d=""+b.key);if(a.type&&a.type.defaultProps)var l=a.type.defaultProps;for(f in b)aa.call(b,f)&&!ba.hasOwnProperty(f)&&(e[f]=void 0===b[f]&&void 0!==l?l[f]:b[f])}var f=arguments.length-2;if(1===f)e.children=c;else if(1<f){l=Array(f);for(var g=0;g<f;g++)l[g]=arguments[g+2];e.children=l}return{$$typeof:y,type:a.type,key:d,ref:k,props:e,_owner:h}};c.createContext=function(a){a={$$typeof:wa,_currentValue:a,_currentValue2:a,_threadCount:0,Provider:null,Consumer:null,_defaultValue:null,_globalName:null};a.Provider={$$typeof:va,_context:a};return a.Consumer=a};c.createElement=Z;c.createFactory=function(a){var b=Z.bind(null,a);b.type=a;return b};c.createRef=function(){return{current:null}};c.forwardRef=function(a){return{$$typeof:xa,render:a}};c.isValidElement=M;c.lazy=function(a){return{$$typeof:Aa,_payload:{_status:-1,_result:a},_init:ra}};c.memo=function(a,b){return{$$typeof:za,type:a,compare:void 0===b?null:b}};c.startTransition=function(a,b){b=J.transition;J.transition={};try{a()}finally{J.transition=b}};c.unstable_act=ka;c.useCallback=function(a,b){return g.current.useCallback(a,b)};c.useContext=function(a){return g.current.useContext(a)};c.useDebugValue=function(a,b){};c.useDeferredValue=function(a){return g.current.useDeferredValue(a)};c.useEffect=function(a,b){return g.current.useEffect(a,b)};c.useId=function(){return g.current.useId()};c.useImperativeHandle=function(a,b,c){return g.current.useImperativeHandle(a,b,c)};c.useInsertionEffect=function(a,b){return g.current.useInsertionEffect(a,b)};c.useLayoutEffect=function(a,b){return g.current.useLayoutEffect(a,b)};c.useMemo=function(a,b){return g.current.useMemo(a,b)};c.useReducer=function(a,b,c){return g.current.useReducer(a,b,c)};c.useRef=function(a){return g.current.useRef(a)};c.useState=function(a){return g.current.useState(a)};c.useSyncExternalStore=function(a,b,c){return g.current.useSyncExternalStore(a,b,c)};c.useTransition=function(){return g.current.useTransition()};c.version="18.3.1"});})();
-</script>
-<script src="react-dom.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--panel-bg:#fff;--border:#e5e4e7;--card-muted:rgba(244,243,236,0.6);--text:#6b6375;--text-h:#08060d;--accent:#aa3bff;--accent-bg:rgba(170,59,255,0.1);--accent-border:rgba(170,59,255,0.5);--input-bg:#fff;--shadow:rgba(0,0,0,0.08)0 4px 12px}
@@ -32,7 +22,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 .tab-meta .field{flex:1}
 .field{display:flex;flex-direction:column;gap:6px}
 .field span{font-size:14px;font-weight:700;color:var(--text-h)}
-.field input,.section-title input{width:100%;border:1px solid var(--border);border-radius:14px;background:var(--input-bg);color:var(--text-h);padding:10px 14px;font:inherit;font-size:14px;box-sizing:border-box}
+.field input,.section-title input{width:100%;border:1px solid var(--border);border-radius:14px;background:var(--input-bg);color:var(--text-h);padding:10px 14px;font:inherit;font-size:14px}
 .panel-header{margin-bottom:16px}
 .panel-header h2{font-size:18px;color:var(--text-h)}
 .panel-header p{font-size:14px}
@@ -77,7 +67,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 .result-list,.choice-list,.stop-list{display:grid;gap:8px;max-height:300px;overflow:auto}
 .result-card,.choice-chip,.stop-row{text-align:left;background:var(--card-muted);color:var(--text-h);border-radius:14px;padding:12px;border:1px solid transparent;cursor:pointer;font:inherit}
 .result-card:hover,.choice-chip:hover,.stop-row:hover{border-color:var(--accent-border)}
-.result-card.selected,.choice-chip.selected,.stop-row.selected,.stop-row.selected{border-color:var(--accent);background:var(--accent-bg)}
+.result-card.selected,.choice-chip.selected,.stop-row.selected{border-color:var(--accent);background:var(--accent-bg)}
 .result-card strong,.choice-chip strong{display:block;font-size:15px;margin-bottom:4px}
 .result-card span,.choice-chip span,.stop-name{font-size:13px;color:var(--text)}
 .stop-row{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:center}
@@ -90,7 +80,178 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 @media(min-width:768px){.fastest-grid{grid-template-columns:repeat(3,1fr)}}
 </style>
 </head>
-<body><div id="root"></div>
-<script src="app.js"></script>
+<body>
+<div id="root">
+<div class="board-panel" id="board">
+<div class="tabs-bar" id="tabs-bar"></div>
+<div class="tab-meta">
+<label class="field"><span>分頁名稱</span><input id="tab-name"></label>
+<p class="muted">資料保存在瀏覽器本機。</p>
+</div>
+<div id="fastest-panel" style="display:none">
+<div class="fastest-panel-header"><h3>最快到站 3 條路線</h3><p>根據這個分頁每個站的首班 ETA 排序</p></div>
+<div class="fastest-grid" id="fastest-grid"></div>
+</div>
+<div class="favourite-grid" id="favourite-grid"></div>
+</div>
+<div class="builder-panel" id="builder">
+<div class="panel-header"><h2>加入新站點</h2><p>搜尋路線，再選方向與站點。</p></div>
+<label class="field"><span>搜尋路線</span><input id="route-search" placeholder="例如 1A、970、機場"></label>
+<div class="result-list" id="result-list"></div>
+<div class="section-block" id="dir-block" style="display:none"><h3>方向</h3><div class="choice-list" id="dir-list"></div></div>
+<div class="section-block" id="stop-block" style="display:none">
+<div class="section-title"><h3>站點</h3><input id="stop-filter" placeholder="過濾站點"></div>
+<div class="stop-list" id="stop-list"></div>
+</div>
+<button type="button" class="primary-button" id="add-btn" disabled>加入目前分頁</button>
+</div>
+</div>
+<script>
+(function(){
+var K='hk-bus-db-v3', CK='hk-bus-col-v2'
+var M={tabs:[], activeTabId:'', collapsed:{}, routeResults:[], selectedRoute:null, directions:[], selectedDir:null, stops:[], selectedStopId:'', etaMap:{}}
+
+function el(t,c,ch){var e=document.createElement(t);if(c)for(var k in c){if(k==='cls')e.className=c[k];else if(k==='on')e.addEventListener(c[k].split(' ')[0],c[k].split(' ')[1]);else e[k]=c[k]}if(typeof ch==='string')e.textContent=ch;else if(ch)for(var i=0;i<ch.length;i++)e.appendChild(ch[i]);return e}
+function uid(){return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
+function defTab(i){return{id:uid(),name:'分頁 '+i,favourites:[]}}
+function fmt(eta){if(!eta)return'--';var m=Math.round((new Date(eta).getTime()-Date.now())/60000);return m<=0?'即將到站':m+' 分鐘'}
+function fk(f){return f.op+':'+f.rt+':'+f.dir+':'+f.stype+':'+f.sid}
+function dc(d){return d==='outbound'?'O':'I'}
+function bt(b){return b==='O'?'outbound':'inbound'}
+function gt(u,cb){fetch(u,{headers:{accept:'application/json'}}).then(r=>{if(!r.ok)throw Error('ERR'+r.status);return r.json()}).then(d=>cb(null,d)).catch(e=>cb(e,null))}
+function gs(u,cb){fetch(u,{headers:{accept:'application/json'}}).then(r=>{if(!r.ok){cb(null,null);return};return r.json()}).then(d=>cb(null,d)).catch(e=>cb(null,null))}
+
+var Q=document.getElementById.bind(document)
+function render(){var m=Q('root').innerHTML='';/* trigger re-read */renderAll()}
+
+var mr=Q('result-list'), md=Q('dir-block'), mdr=Q('dir-list'), ms=Q('stop-block'), mst=Q('stop-list'), mab=Q('add-btn'),msf=Q('stop-filter')
+var mtb=Q('tabs-bar'), mtn=Q('tab-name'), mfg=Q('favourite-grid'), mfp=Q('fastest-panel'), mfgg=Q('fastest-grid')
+
+function loadState(){try{var r=localStorage.getItem(K);if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;return}}}catch(e){}var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}
+function loadCol(){try{var r=localStorage.getItem(CK);if(r){var p=JSON.parse(r);if(p&&typeof p==='object')M.collapsed=p}}catch(e){}}
+function saveAll(){try{localStorage.setItem(K,JSON.stringify({tabs:M.tabs,activeTabId:M.activeTabId}))}catch(e){}try{localStorage.setItem(CK,JSON.stringify(M.collapsed))}catch(e){}}
+
+function at(){return M.tabs.find(t=>t.id===M.activeTabId)||M.tabs[0]}
+
+function renderTabs(){
+mtb.innerHTML=''
+var l=el('div',{cls:'tab-list'})
+M.tabs.forEach(function(t){var b=el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),on:'click '+function(){M.activeTabId=t.id;renderBoard()}},t.name);l.appendChild(b)})
+var a=el('div',{cls:'tab-actions'})
+a.appendChild(el('button',{type:'button',cls:'secondary-button',on:'click '+function(){var t=defTab(M.tabs.length+1);M.tabs.push(t);M.activeTabId=t.id;renderBoard()}},'新增分頁'))
+a.appendChild(el('button',{type:'button',cls:'secondary-button',on:'click '+function(){if(M.tabs.length<2)return;M.tabs=M.tabs.filter(t=>t.id!==M.activeTabId);M.activeTabId=M.tabs[0]?M.tabs[0].id:'';renderBoard()}},'刪除分頁'))
+mtb.appendChild(l);mtb.appendChild(a)
+}
+
+function renderBoard(){
+renderTabs();var t=at()
+if(!t)return
+mtn.value=t.name
+renderFavourites();renderFastest();saveAll()
+}
+
+mtn.addEventListener('input',function(){var t=at();if(t){t.name=mtn.value;saveAll()}})
+
+function renderFavourites(){
+mfg.innerHTML=''
+var t=at();if(!t)return
+if(!t.favourites.length){mfg.innerHTML='<div class="empty-card"><h3>這個分頁還沒有站點</h3><p>往下拉加入新站點，搜尋路線、選方向和站點，然後加入目前分頁即可。</p></div>';return}
+t.favourites.forEach(function(f){var s=M.etaMap[f.id]||{loading:true,items:[]};var c=M.collapsed[f.id]||false;var vi=c?s.items.slice(0,1):s.items
+var badge=el('div',{cls:'badge-row'},[el('span',{cls:'route-badge'},[el('span',{cls:'route-badge-text'},f.rt)]),el('span',{cls:'operator-badge'},f.on)])
+var hdr=el('div',{cls:'eta-card-header'},[el('div',null,[badge,el('h3',null,f.snt),el('p',null,f.dl)]),el('div',{cls:'eta-card-actions'},[el('button',{cls:'icon-button',on:'click '+function(){M.collapsed[f.id]=!M.collapsed[f.id];renderFavourites();saveAll()}},c?'顯示全部':'只顯示首班'),el('button',{cls:'icon-button',on:'click '+function(){var ta=at();ta.favourites=ta.favourites.filter(x=>x.id!==f.id);delete M.etaMap[f.id];delete M.collapsed[f.id];renderBoard();saveAll()}},'移除')])])
+var elist=el('div',{cls:'eta-list'})
+if(s.loading)elist.appendChild(el('p',{cls:'muted'},'更新 ETA 中...'))
+else if(s.error)elist.appendChild(el('p',{cls:'error-text'},s.error))
+else if(!s.items.length)elist.appendChild(el('p',{cls:'muted'},'暫時沒有未來班次資料。'))
+else vi.forEach(function(item){elist.appendChild(el('div',{cls:'eta-row'},[el('div',null,[el('strong',null,fmt(item.eta)),el('span',null,fmtClock(item.eta))]),el('div',null,[el('span',null,item.dt),el('small',null,item.rt||'正常班次')])]))})
+var footer=f.sm+(s.ts?' · 更新於 '+new Date(s.ts).toLocaleTimeString('zh-HK'):'')
+mfg.appendChild(el('div',{cls:'eta-card'},[hdr,elist,el('p',{cls:'eta-footer'},footer)]))})
+}
+
+function fmtClock(eta){return eta?new Date(eta).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}):'--'}
+
+function renderFastest(){
+mfp.style.display='none';mfgg.innerHTML='';var t=at();if(!t||t.favourites.length<3)return
+var br={}
+t.favourites.forEach(function(f){var s=M.etaMap[f.id];if(!s||s.loading||s.error||!s.items||!s.items.length)return;var first=s.items[0];if(!first||!first.eta)return;if(!br[f.rt]||new Date(first.eta).getTime()<new Date(br[f.rt].eta).getTime())br[f.rt]={fid:f.id,rt:f.rt,snt:f.snt,on:f.on,eta:first.eta}})
+var sv=Object.values(br).sort((a,b)=>new Date(a.eta).getTime()-new Date(b.eta).getTime());if(sv.length<3)return
+mfp.style.display='';sv.slice(0,3).forEach(function(item,i){mfgg.appendChild(el('div',{cls:'fastest-card'},[el('span',{cls:'fastest-rank'},'#'+(i+1)),el('strong',null,item.rt),el('span',null,item.snt),el('small',null,item.on+' · '+fmt(item.eta)+' · '+fmtClock(item.eta))]))})
+}
+
+function refreshEtas(){
+var t=at();if(!t||!t.favourites.length)return
+t.favourites.forEach(function(f){M.etaMap[f.id]=M.etaMap[f.id]||{};M.etaMap[f.id].loading=true})
+renderFavourites()
+t.favourites.forEach(function(f){var fn=f.op==='kmb'?gt:gs;var url=f.op==='kmb'?'https://data.etabus.gov.hk/v1/transport/kmb/eta/'+encodeURIComponent(f.sid)+'/'+encodeURIComponent(f.rt)+'/'+encodeURIComponent(f.stype):'https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/'+encodeURIComponent(f.sid)+'/'+encodeURIComponent(f.rt)
+fn(url,function(err,r){if(err){M.etaMap[f.id]={loading:false,items:[],error:err.message,ts:null}}else if(!r||!r.data){M.etaMap[f.id]={loading:false,items:[],error:null,ts:new Date().toISOString()}}else{var items=r.data.filter(function(x){var ok=x.dir===dc(f.dir)&&x.eta;if(f.op==='kmb')ok=ok&&String(x.service_type)===f.stype;return ok}).sort((a,b)=>a.eta_seq-b.eta_seq).slice(0,3).map(x=>({eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}));M.etaMap[f.id]={loading:false,items:items,error:null,ts:new Date().toISOString()}}
+renderFavourites();if(t.favourites.length>=3)renderFastest()})})
+}
+
+var searchTimer=null
+Q('route-search').addEventListener('input',function(){clearTimeout(searchTimer)
+var q=Q('route-search').value
+searchTimer=setTimeout(function(){mr.innerHTML='<span class="muted">搜尋中...</span>';var w=q.trim().toLowerCase();var all=[],seen={},c=0
+function done(){if(++c<2)return;all.sort((a,b)=>a.rt.localeCompare(b.rt,'en',{numeric:true}));mr.innerHTML='';var filtered=w?all.filter(i=>i.mt.indexOf(w)!==-1):all.slice(0,80);filtered.forEach(function(i){mr.appendChild(el('button',{cls:'result-card'+(M.selectedRoute&&M.selectedRoute.op===i.op&&M.selectedRoute.rt===i.rt?' selected':''),on:'click '+function(){M.selectedRoute=i;renderRouteSelected()}},[el('strong',null,i.on+' '+i.rt),el('span',null,i.sm)]))})}
+gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,kmb){
+if(!e&&kmb)kmb.data.forEach(function(r){if(!seen[r.route]){seen[r.route]=1;all.push({op:'kmb',on:'九巴/龍運',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+r.orig_tc+r.dest_tc+r.orig_en+r.dest_en).toLowerCase()})}})
+done()})
+gs('https://rt.data.gov.hk/v2/transport/citybus/route/CTB',function(e,ctb){
+if(ctb)ctb.data.forEach(function(r){if(!seen[r.route]){seen[r.route]=1;all.push({op:'ctb',on:'城巴',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+r.orig_tc+r.dest_tc+r.orig_en+r.dest_en).toLowerCase()})}})
+done()})},350)})
+
+function renderRouteSelected(){md.style.display='';mdr.innerHTML='';ms.style.display='none';M.selectedDir=null;M.stops=[];M.selectedStopId='';mab.disabled=true
+mdr.innerHTML='<span class="muted">載入方向中...</span>'
+var sr=M.selectedRoute
+if(sr.op==='kmb'){gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,kmb){if(sr!==M.selectedRoute)return
+if(e){mdr.innerHTML='<span class="error-text">'+e.message+'</span>';return}
+var opts=kmb.data.filter(function(x){return x.route.toLowerCase()===sr.rt.toLowerCase()}).map(function(x){return{direction:bt(x.bound),directionCode:x.bound,serviceType:x.service_type,label:x.orig_tc+' -> '+x.dest_tc+(x.service_type!=='1'?'(特'+x.service_type+')':''),stopCount:0}})
+var seen={},out=[];opts.forEach(o=>{var k=o.direction+'-'+o.serviceType;if(!seen[k]){seen[k]=1;out.push(o)}})
+renderDirs(out)})}else{renderCtbDirs(sr.rt)}}
+
+function renderCtbDirs(rt){var dirs=[],p1=0,p2=0
+function check(){if(p1<2||p2<4)return;var out=dirs.filter(Boolean);renderDirs(out)}
+for(var i=0;i<2;i++){loadOne(i===0?'outbound':'inbound')}
+function loadOne(dir){gs('https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/'+encodeURIComponent(rt)+'/'+dir,function(e,cr){p1++
+if(!cr||!cr.data||!cr.data.length){check();return}
+gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(cr.data[0].stop),function(e2,fr){p2++
+gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(cr.data[cr.data.length-1].stop),function(e3,lr){p2++;var fn=fr&&fr.data?fr.data.name_tc:'起點';var ln=lr&&lr.data?lr.data.name_tc:'終點';dirs[dir==='outbound'?0:1]={direction:dir,directionCode:dir==='outbound'?'O':'I',serviceType:'1',label:fn+' -> '+ln,stopCount:cr.data.length};check()})})})}}
+
+function renderDirs(out){mdr.innerHTML=''
+out.forEach(function(d){mdr.appendChild(el('button',{cls:'choice-chip'+(M.selectedDir&&M.selectedDir.direction===d.direction&&M.selectedDir.serviceType===d.serviceType?' selected':''),on:'click '+function(){M.selectedDir=d;renderDirSelected();renderStops()}},[el('strong',null,d.label),el('span',null,(d.direction==='outbound'?'去程':'回程')+(d.serviceType!=='1'?'·班次'+d.serviceType:'')+(d.stopCount>0?'·'+d.stopCount+'站':''))]))})
+if(!out.length)mdr.innerHTML='<span class="muted">這條路線目前沒有方向資料。</span>'
+}
+
+function renderDirSelected(){
+var btns=mdr.querySelectorAll('button');btns.forEach(function(b){var sd=M.selectedDir;if(!sd)return;var label=b.querySelector('strong').textContent;var cls='choice-chip';if(label===sd.label)b.className=cls+' selected';else b.className=cls})}
+
+function renderStops(){ms.style.display='';mst.innerHTML='<span class="muted">載入站點中...</span>';M.stops=[];M.selectedStopId='';mab.disabled=true;Q('stop-filter').value=''
+var sr=M.selectedRoute,sd=M.selectedDir
+if(sr.op==='kmb'){
+var url1='https://data.etabus.gov.hk/v1/transport/kmb/route-stop/'+encodeURIComponent(sr.rt)+'/'+encodeURIComponent(sd.direction)+'/'+encodeURIComponent(sd.serviceType)
+gt(url1,function(e1,rs){if(sr!==M.selectedRoute||sd!==M.selectedDir)return;if(e1){mst.innerHTML='<span class="error-text">'+e1.message+'</span>';return}
+gt('https://data.etabus.gov.hk/v1/transport/kmb/stop',function(e2,as){if(sr!==M.selectedRoute||sd!==M.selectedDir)return;if(e2){mst.innerHTML='<span class="error-text">'+e2.message+'</span>';return}
+var sm={};as.data.forEach(function(s){sm[s.stop]={n:s.name_tc,e:s.name_en}})
+M.stops=rs.data.map(function(r){return{stopId:r.stop,seq:Number(r.seq),nameTc:sm[r.stop]?sm[r.stop].n:'站'+r.stop.slice(0,6),nameEn:sm[r.stop]?sm[r.stop].e:'Stop '+r.stop.slice(0,6)}})
+renderStopList()})})}else{renderCtbStopList(sr.rt,sd.direction)}}
+
+function renderCtbStopList(rt,dir){gs('https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/'+encodeURIComponent(rt)+'/'+encodeURIComponent(dir),function(e,cr){if(M.selectedRoute.rt!==rt||(M.selectedDir||{}).direction!==dir)return;if(!cr||!cr.data){mst.innerHTML='';return}
+var out=[],cnt=0,don=false,total=cr.data.length
+cr.data.forEach(function(rec,i){
+gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(rec.stop),function(e2,s){cnt++;out[i]={stopId:rec.stop,seq:rec.seq,nameTc:s&&s.data?s.data.name_tc:'站'+rec.stop,nameEn:s&&s.data?s.data.name_en:'Stop '+rec.stop};if(!don&&cnt>=total){don=true;M.stops=out;renderStopList()}})})})}
+
+function renderStopList(){mst.innerHTML='';filtered().forEach(function(s){mst.appendChild(el('button',{cls:'stop-row'+(M.selectedStopId===s.stopId?' selected':''),on:'click '+function(){M.selectedStopId=s.stopId;renderStopList();mab.disabled=false}},[el('span',{cls:'stop-seq'},s.seq),el('span',{cls:'stop-name'},s.nameTc)]))})}
+
+function filtered(){var q=Q('stop-filter').value.trim().toLowerCase();return M.stops.filter(function(s){return!q||(String(s.seq)+s.nameTc+s.nameEn).toLowerCase().indexOf(q)!==-1})}
+msf.addEventListener('input',function(){renderStopList()})
+
+mab.addEventListener('click',function(){var t=at();if(!t||!M.selectedRoute||!M.selectedDir||!M.selectedStopId)return;var s=M.stops.find(s=>s.stopId===M.selectedStopId);if(!s)return
+var nf={id:uid(),op:M.selectedRoute.op,on:M.selectedRoute.on,rt:M.selectedRoute.rt,sm:M.selectedRoute.sm,dir:M.selectedDir.direction,dl:M.selectedDir.label,stype:M.selectedDir.serviceType,sid:s.stopId,snt:s.nameTc,sne:s.nameEn}
+if(t.favourites.some(x=>fk(x)===fk(nf)))return
+t.favourites.push(nf);renderBoard();refreshEtas();saveAll()})
+
+function init(){loadState();loadCol();var t=at();if(!t||!M.tabs.length){var t2=defTab(1);M.tabs=[t2];M.activeTabId=t2.id}renderBoard();refreshEtas();setInterval(refreshEtas,30000)}
+init()
+})()
+</script>
 </body>
 </html>
