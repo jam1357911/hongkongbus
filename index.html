@@ -160,15 +160,21 @@ if(!done&&cnt>=total){done=true;cb(out)}})})})}
 
 React.useEffect(function(){if(!at||!at.favourites||!at.favourites.length)return
 var cancelled=false
-function flushOne(idx,val){if(cancelled)return;var results=arguments[2];results[idx]=val;var done=0,need=0;for(var k in results)done++;for(var k in at.favourites)need++;if(done<need)return
-setEm(function(p){var n={};for(var k in p)n[k]=p[k];for(var k in results){var r=results[k];if(r)n[r[0]]=r[1]}return n})}
-function refresh(){setEm(function(p){var n={};for(var k in p)n[k]=p[k];at.favourites.forEach(function(f){n[f.id]={loading:true,items:[],error:null,ts:null}});return n})
-setTimeout(function(){var results=[]
-at.favourites.forEach(function(f,idx){if(f.op==='kmb'){gt('https://data.etabus.gov.hk/v1/transport/kmb/eta/'+encodeURIComponent(f.stopId)+'/'+encodeURIComponent(f.rt)+'/'+encodeURIComponent(f.serviceType),function(err,r){if(err){flushOne(idx,[f.id,{loading:false,items:[],error:err.message,ts:null}],results)}else{var items=r.data.filter(function(x){return x.dir===dc(f.direction)&&String(x.service_type)===f.serviceType&&x.eta}).sort(function(a,b){return a.eta_seq-b.eta_seq}).slice(0,3).map(function(x){return{eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}})
-flushOne(idx,[f.id,{loading:false,items:items,error:null,ts:new Date().toISOString()}],results)}})}
-else{gs('https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/'+encodeURIComponent(f.stopId)+'/'+encodeURIComponent(f.rt),function(err,r){if(err||!r||!r.data){flushOne(idx,[f.id,{loading:false,items:[],error:null,ts:new Date().toISOString()}],results)}else{var items=r.data.filter(function(x){return x.dir===dc(f.direction)&&x.eta}).sort(function(a,b){return a.eta_seq-b.eta_seq}).slice(0,3).map(function(x){return{eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}})
-flushOne(idx,[f.id,{loading:false,items:items,error:null,ts:new Date().toISOString()}],results)}}})}}),100)}
-refresh();var timer=setInterval(refresh,30000);return function(){cancelled=true;clearInterval(timer)}},[at])
+function loadEtas(){setEm(function(p){var n={};for(var k in p)n[k]=p[k];at.favourites.forEach(function(f){n[f.id]={loading:true,items:[],error:null,ts:null}});return n})
+at.favourites.forEach(function(f){var url
+if(f.op==='kmb'){url='https://data.etabus.gov.hk/v1/transport/kmb/eta/'+encodeURIComponent(f.stopId)+'/'+encodeURIComponent(f.rt)+'/'+encodeURIComponent(f.serviceType)
+gt(url,function(err,r){if(cancelled)return;done(f,err,r)})}
+else{url='https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/'+encodeURIComponent(f.stopId)+'/'+encodeURIComponent(f.rt)
+gs(url,function(err,r){if(cancelled)return;done(f,err,r)})}})
+function done(f,err,r){var data
+if(err){data={loading:false,items:[],error:err.message,ts:null}}
+else if(!r||!r.data){data={loading:false,items:[],error:null,ts:new Date().toISOString()}}
+else{var items=r.data.filter(function(x){return x.dir===dc(f.direction)&&(f.op!=='kmb'||String(x.service_type)===f.serviceType)&&x.eta}).sort(function(a,b){return a.eta_seq-b.eta_seq}).slice(0,3).map(function(x){return{eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}})
+data={loading:false,items:items,error:null,ts:new Date().toISOString()}}
+setEm(function(p){var n={};for(var k in p)n[k]=p[k];n[f.id]=data;return n})}}
+setTimeout(loadEtas,100);loadEtas()
+var timer=setInterval(loadEtas,30000)
+return function(){cancelled=true;clearInterval(timer)}},[at])
 
 function addTab(){var t2=defTab(t.length+1);setT(function(p){return p.concat([t2])});setA(t2.id)}
 function remTab(id){if(t.length<2)return;setT(function(p){return p.filter(function(x){return x.id!==id})})}
