@@ -127,21 +127,19 @@ function render(){var m=Q('root').innerHTML='';/* trigger re-read */renderAll()}
 var mr=Q('result-list'), md=Q('dir-block'), mdr=Q('dir-list'), ms=Q('stop-block'), mst=Q('stop-list'), mab=Q('add-btn'),msf=Q('stop-filter')
 var mtb=Q('tabs-bar'), mtn=Q('tab-name'), mfg=Q('favourite-grid'), mfp=Q('fastest-panel'), mfgg=Q('fastest-grid')
 
-function dbGet(k,cb){try{var r=localStorage.getItem(k);if(r)return cb(r)}catch(e){}var req=indexedDB.open('BusDB',1)
+function dbGet(k,cb){try{var r=localStorage.getItem(k);if(r)return cb(r)}catch(e){}try{var req=indexedDB.open('BusDB',1)
 req.onupgradeneeded=function(e){e.target.result.createObjectStore('store')}
-req.onsuccess=function(e){var tx=e.target.result.transaction('store','readonly');var r=tx.objectStore('store').get(k);r.onsuccess=function(){if(r.result)cb(r.result);else cb(null)};r.onerror=function(){cb(null)}};req.onerror=function(){cb(null)}}
-function dbSet(k,v){try{localStorage.setItem(k,v);return}catch(e){}var req=indexedDB.open('BusDB',1)
+req.onsuccess=function(e){var tx=e.target.result.transaction('store','readonly');var r=tx.objectStore('store').get(k);r.onsuccess=function(){if(r.result)cb(r.result);else cb(null)};r.onerror=function(){cb(null)}};req.onerror=function(){cb(null)}}catch(e){cb(null)}}
+function dbSet(k,v){try{localStorage.setItem(k,v);return}catch(e){}try{var req=indexedDB.open('BusDB',1)
 req.onupgradeneeded=function(e){e.target.result.createObjectStore('store')}
-req.onsuccess=function(e){var tx=e.target.result.transaction('store','readwrite');tx.objectStore('store').put(v,k)}}
+req.onsuccess=function(e){var tx=e.target.result.transaction('store','readwrite');tx.objectStore('store').put(v,k)}}catch(e){}}
 
-var savedTabs=null,savedCol=null
+var savedTabs=null,savedCol=null,finishedInit=false
 function loadAll(){dbGet(K,function(r){if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;savedTabs=r}else{setDefaults()}savedTabs=savedTabs||'';checkInit()})})
 dbGet(CK,function(r){if(r){var p=JSON.parse(r);if(p&&typeof p==='object')M.collapsed=p;savedCol=r}else{savedCol='{}'}checkInit()})}
 function setDefaults(){var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}
 function checkInit(){if(savedTabs===null||savedCol===null)return;if(!savedTabs){var t=defTab(1);M.tabs=[t];M.activeTabId=t.id}renderBoard();refreshEtas();finishedInit=true}
 function saveAll(){var ts=JSON.stringify({tabs:M.tabs,activeTabId:M.activeTabId});var cs=JSON.stringify(M.collapsed);dbSet(K,ts);dbSet(CK,cs)}
-
-var finishedInit=false
 function loadState(){if(finishedInit)return}
 function loadCol(){if(finishedInit)return}
 
