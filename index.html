@@ -112,14 +112,15 @@ const formatCountdown=eta=>{const m=Math.round((new Date(eta).getTime()-Date.now
 const favouriteKey=f=>(`${f.operator}:${f.route}:${f.direction}:${f.serviceType}:${f.stopId}`).toLowerCase()
 
 const fetchJson=async(url,opts)=>{const r=await fetch(url,opts||{headers:{accept:'application/json'}});if(!r.ok)throw new Error(`API 錯誤 ${r.status}`);return r.json()}
+const fetchSafe=async(url)=>{try{const r=await fetch(url,{headers:{accept:'application/json'}});if(!r.ok)return null;return await r.json()}catch{return null}}
 const fetchKmbRoutes=()=>fetchJson('https://data.etabus.gov.hk/v1/transport/kmb/route/')
-const fetchCitybusRoutes=()=>fetchJson('https://rt.data.gov.hk/v2/transport/citybus/route/CTB')
+const fetchCitybusRoutes=()=>fetchSafe('https://rt.data.gov.hk/v2/transport/citybus/route/CTB')
 const fetchKmbStops=()=>fetchJson('https://data.etabus.gov.hk/v1/transport/kmb/stop')
 const fetchKmbRouteStops=(route,direction,st)=>fetchJson(`https://data.etabus.gov.hk/v1/transport/kmb/route-stop/${encodeURIComponent(route)}/${encodeURIComponent(direction)}/${encodeURIComponent(st)}`)
-const fetchCitybusRouteStops=(route,direction)=>fetchJson(`https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/${encodeURIComponent(route)}/${encodeURIComponent(direction)}`)
-const fetchCitybusStop=stopId=>fetchJson(`https://rt.data.gov.hk/v2/transport/citybus/stop/${encodeURIComponent(stopId)}`)
+const fetchCitybusRouteStops=(route,direction)=>fetchSafe(`https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/${encodeURIComponent(route)}/${encodeURIComponent(direction)}`)
+const fetchCitybusStop=stopId=>fetchSafe(`https://rt.data.gov.hk/v2/transport/citybus/stop/${encodeURIComponent(stopId)}`)
 const fetchKmbEta=(stopId,route,st)=>fetchJson(`https://data.etabus.gov.hk/v1/transport/kmb/eta/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}/${encodeURIComponent(st)}`)
-const fetchCitybusEta=(stopId,route)=>fetchJson(`https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}`)
+const fetchCitybusEta=(stopId,route)=>fetchSafe(`https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/${encodeURIComponent(stopId)}/${encodeURIComponent(route)}`)
 
 const operatorName=op=>op==='kmb'?'九巴/龍運':'城巴'
 const directionLabel=(d,o,i)=>d==='O'?'去程':'回程'
@@ -154,15 +155,15 @@ useEffect(()=>{localStorage.setItem('hk-bus-collapsed-v2',JSON.stringify(collaps
 useEffect(()=>{if(!tabs.some(t=>t.id===activeTabId))setActiveTabId(tabs[0]?.id??'')},[tabs,activeTabId])
 
 useEffect(()=>{const t=setTimeout(async()=>{setSearching(true);setErr(null);try{const q=routeQuery.trim().toLowerCase();const[kmbData,ctbData]=await Promise.all([fetchKmbRoutes(),fetchCitybusRoutes()]);const all=[];const dedup={}
-kmbData.data.forEach(r=>{const key=r.route;if(!dedup[key]){dedup[key]=1;all.push({operator:'kmb',operatorName:'九巴/龍運',route:r.route,summary:`${r.orig_tc}->${r.dest_tc}`,matchText:`${r.route}${r.orig_tc}${r.dest_tc}${r.orig_en}${r.dest_en}`.toLowerCase()})}})
-ctbData.data.forEach(r=>{const key=r.route;if(!dedup[key]){dedup[key]=1;all.push({operator:'ctb',operatorName:'城巴',route:r.route,summary:`${r.orig_tc}->${r.dest_tc}`,matchText:`${r.route}${r.orig_tc}${r.dest_tc}${r.orig_en}${r.dest_en}`.toLowerCase()})}})
+if(kmbData)kmbData.data.forEach(r=>{const key=r.route;if(!dedup[key]){dedup[key]=1;all.push({operator:'kmb',operatorName:'九巴/龍運',route:r.route,summary:`${r.orig_tc}->${r.dest_tc}`,matchText:`${r.route}${r.orig_tc}${r.dest_tc}${r.orig_en}${r.dest_en}`.toLowerCase()})}})
+if(ctbData)ctbData.data.forEach(r=>{const key=r.route;if(!dedup[key]){dedup[key]=1;all.push({operator:'ctb',operatorName:'城巴',route:r.route,summary:`${r.orig_tc}->${r.dest_tc}`,matchText:`${r.route}${r.orig_tc}${r.dest_tc}${r.orig_en}${r.dest_en}`.toLowerCase()})}})
 all.sort((a,b)=>a.route.localeCompare(b.route,'en',{numeric:true}))
 setRouteResults(q?all.filter(i=>i.matchText.includes(q)):all.slice(0,80))}catch(e){setErr(e.message)}finally{setSearching(false)}},350);return()=>clearTimeout(t)},[routeQuery])
 
 useEffect(()=>{if(!selectedRoute){setDirections([]);setSelectedDir(null);setStops([]);setSelectedStopId('');return}
 let c=false;const load=async()=>{setLoadingDir(true);setErr(null);setSelectedDir(null);setStops([]);setSelectedStopId('')
 try{if(selectedRoute.operator==='kmb'){const r=await fetchKmbRoutes();const opts=r.data.filter(x=>x.route.toLowerCase()===selectedRoute.route.toLowerCase()).map(x=>({direction:boundText(x.bound),directionCode:x.bound,serviceType:x.service_type,label:`${x.orig_tc}->${x.dest_tc}${x.service_type!=='1'?`(特${x.service_type})`:''}`,stopCount:0}));const dedup={};const out=[];opts.forEach(o=>{const k=`${o.direction}-${o.serviceType}`;if(!dedup[k]){dedup[k]=1;out.push(o)}});if(!c)setDirections(out)}
-else{const dirs=[];for(const d of['outbound','inbound']){try{const r=await fetchCitybusRouteStops(selectedRoute.route,d);if(r.data&&r.data.length>0){const[first,last]=await Promise.all([fetchCitybusStop(r.data[0].stop).then(x=>x.data),fetchCitybusStop(r.data[r.data.length-1].stop).then(x=>x.data)]);dirs.push({direction:d,directionCode:d==='outbound'?'O':'I',serviceType:'1',label:`${first.name_tc}->${last.name_tc}`,stopCount:r.data.length})}}catch{}}if(!c)setDirections(dirs)}
+else{const dirs=[];for(const d of['outbound','inbound']){try{const r=await fetchCitybusRouteStops(selectedRoute.route,d);if(r&&r.data&&r.data.length>0){const[first,last]=await Promise.all([(fetchCitybusStop(r.data[0].stop).then(x=>x&&x.data||null)),(fetchCitybusStop(r.data[r.data.length-1].stop).then(x=>x&&x.data||null))]);dirs.push({direction:d,directionCode:d==='outbound'?'O':'I',serviceType:'1',label:`${(first&&first.name_tc)||'起點'}->${(last&&last.name_tc)||'終點'}`,stopCount:r.data.length})}}catch{}}if(!c)setDirections(dirs)}
 }catch(e){if(!c)setErr(e.message)}finally{if(!c)setLoadingDir(false)}}
 load();return()=>{c=true}},selectedRoute?[selectedRoute.operator,selectedRoute.route]:[])
 
@@ -170,14 +171,14 @@ useEffect(()=>{if(!selectedRoute||!selectedDir){setStops([]);setSelectedStopId('
 let c=false;const load=async()=>{setLoadingStops(true);setErr(null);setSelectedStopId('')
 try{if(selectedRoute.operator==='kmb'){const[routeStopData,allStopsData]=await Promise.all([fetchKmbRouteStops(selectedRoute.route,selectedDir.direction,selectedDir.serviceType),fetchKmbStops()]);const stopMap={};allStopsData.data.forEach(s=>{stopMap[s.stop]={nameTc:s.name_tc,nameEn:s.name_en}})
 const out=routeStopData.data.map(r=>({stopId:r.stop,seq:Number(r.seq),nameTc:stopMap[r.stop]?.nameTc??`站${r.stop.slice(0,6)}`,nameEn:stopMap[r.stop]?.nameEn??`Stop ${r.stop.slice(0,6)}`}));if(!c)setStops(out)}
-else{const r=await fetchCitybusRouteStops(selectedRoute.route,selectedDir.direction);const out=await Promise.all(r.data.map(async rec=>{try{const s=await fetchCitybusStop(rec.stop).then(x=>x.data);return{stopId:rec.stop,seq:rec.seq,nameTc:s.name_tc,nameEn:s.name_en}}catch{return{stopId:rec.stop,seq:rec.seq,nameTc:`站${rec.stop}`,nameEn:`Stop ${rec.stop}`}}}));if(!c)setStops(out)}
+else{const r=await fetchCitybusRouteStops(selectedRoute.route,selectedDir.direction);if(!r||!r.data){if(!c)setStops([]);return}const out=await Promise.all(r.data.map(async rec=>{try{const s=await fetchCitybusStop(rec.stop).then(x=>x&&x.data);return{stopId:rec.stop,seq:rec.seq,nameTc:(s&&s.name_tc)||`站${rec.stop}`,nameEn:(s&&s.name_en)||`Stop ${rec.stop}`}}catch{return{stopId:rec.stop,seq:rec.seq,nameTc:`站${rec.stop}`,nameEn:`Stop ${rec.stop}`}}}));if(!c)setStops(out)}
 }catch(e){if(!c)setErr(e.message)}finally{if(!c)setLoadingStops(false)}}
 load();return()=>{c=true}},[selectedRoute?.route,selectedRoute?.operator,selectedDir?.direction,selectedDir?.serviceType])
 
 useEffect(()=>{if(!activeTab||activeTab.favourites.length===0)return
 let c=false;const refresh=async()=>{setEtaMap(p=>{const n={...p};activeTab.favourites.forEach(f=>{n[f.id]={...n[f.id],loading:true}});return n})
 const results=await Promise.all(activeTab.favourites.map(async f=>{try{if(f.operator==='kmb'){const r=await fetchKmbEta(f.stopId,f.route,f.serviceType);const items=r.data.filter(x=>x.dir===normalizeDir(f.direction)&&String(x.service_type)===f.serviceType&&x.eta).sort((a,b)=>a.eta_seq-b.eta_seq).slice(0,3).map(x=>({eta:x.eta,etaSeq:x.eta_seq,remarkTc:x.rmk_tc||'',remarkEn:x.rmk_en||'',destinationTc:x.dest_tc,destinationEn:x.dest_en}));return[f.id,{loading:false,items,error:null,fetchedAt:new Date().toISOString()}]}
-else{const r=await fetchCitybusEta(f.stopId,f.route);const items=r.data.filter(x=>x.dir===normalizeDir(f.direction)&&x.eta).sort((a,b)=>a.eta_seq-b.eta_seq).slice(0,3).map(x=>({eta:x.eta,etaSeq:x.eta_seq,remarkTc:x.rmk_tc||'',remarkEn:x.rmk_en||'',destinationTc:x.dest_tc,destinationEn:x.dest_en}));return[f.id,{loading:false,items,error:null,fetchedAt:new Date().toISOString()}]}
+else{const r=await fetchCitybusEta(f.stopId,f.route);if(!r||!r.data)return[f.id,{loading:false,items:[],error:null,fetchedAt:new Date().toISOString()}];const items=r.data.filter(x=>x.dir===normalizeDir(f.direction)&&x.eta).sort((a,b)=>a.eta_seq-b.eta_seq).slice(0,3).map(x=>({eta:x.eta,etaSeq:x.eta_seq,remarkTc:x.rmk_tc||'',remarkEn:x.rmk_en||'',destinationTc:x.dest_tc,destinationEn:x.dest_en}));return[f.id,{loading:false,items,error:null,fetchedAt:new Date().toISOString()}]}
 }catch(e){return[f.id,{loading:false,items:[],error:e.message,fetchedAt:null}]}}))
 if(!c)setEtaMap(p=>{const n={...p};results.forEach(([id,s])=>n[id]=s);return n})}
 refresh();const timer=setInterval(refresh,30000);return()=>{c=true;clearInterval(timer)}},[activeTab])
