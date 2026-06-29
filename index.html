@@ -88,10 +88,10 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 var K = 'hk-bus-db-v3'
 var CK = 'hk-bus-col-v2'
 
-function uid() {
+var uid = (function () {
   var n = 0
   return function (){ return 'id-' + (++n) + '-' + Date.now() + '-' + Math.random().toString(36).slice(2,8) }
-}()
+})()
 
 function defTab(i) { return { id: uid(), name: '\u5206\u9801 ' + i, favourites: [] } }
 
