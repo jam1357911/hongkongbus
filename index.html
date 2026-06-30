@@ -397,21 +397,26 @@ mab.addEventListener('click',function(){
 
 // ---- persistence ----
  function loadAll(){
+   var loaded=false
    try{
-     var h=window.location.hash.slice(1)
-     if(h){
-       var p=JSON.parse(decodeURIComponent(h))
-       if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId}
-       if(p&&p.collapsed)M.collapsed=p.collapsed
-     }
+     var r=localStorage.getItem('hk-bus-v5')
+     if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;loaded=true}}
    }catch(e){}
+   if(!loaded){
+     try{
+       var h=window.location.hash.slice(1)
+       if(h){var p=JSON.parse(decodeURIComponent(h));if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;try{localStorage.setItem('hk-bus-v5',h)}catch(e){}}}
+     }catch(e2){}
+   }
    renderBoard()
    refreshEtas()
  }
 
  function saveAll(){
    var data={tabs:M.tabs,activeTabId:M.activeTabId,collapsed:M.collapsed}
-   try{window.location.hash=encodeURIComponent(JSON.stringify(data))}catch(e){}
+   var s=JSON.stringify(data)
+   try{localStorage.setItem('hk-bus-v5',s)}catch(e){}
+   try{window.location.hash=encodeURIComponent(s)}catch(e){}
  }
 
 function init(){loadAll();setInterval(refreshEtas,30000)}
