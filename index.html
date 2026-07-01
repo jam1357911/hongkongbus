@@ -165,7 +165,7 @@ function renderBoard(){
   mtn.value=t.name
   renderFavourites()
   renderFastest()
-  saveAll()
+  if(M._ready&&M.tabs.length&&M.tabs.some(function(t){return t.favourites.length}))saveAll()
 }
 
 // ---- favourites ----
@@ -396,23 +396,25 @@ mab.addEventListener('click',function(){
 })
 
 // ---- persistence ----
+ var _loaded=false
  function loadAll(){
-   var loaded=false
    try{
      var r=localStorage.getItem('hk-bus-v5')
-     if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;loaded=true}}
+     if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;_loaded=true}}
    }catch(e){}
-   if(!loaded){
+   if(!_loaded){
      try{
        var h=window.location.hash.slice(1)
-       if(h){var p=JSON.parse(decodeURIComponent(h));if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;try{localStorage.setItem('hk-bus-v5',h)}catch(e){}}}
+       if(h){var p=JSON.parse(decodeURIComponent(h));if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;try{localStorage.setItem('hk-bus-v5',h)}catch(e){};_loaded=true}}
      }catch(e2){}
    }
+   M._ready=true
    renderBoard()
    refreshEtas()
  }
 
  function saveAll(){
+   if(!M.tabs||!M.tabs.length)return
    var data={tabs:M.tabs,activeTabId:M.activeTabId,collapsed:M.collapsed}
    var s=JSON.stringify(data)
    try{localStorage.setItem('hk-bus-v5',s)}catch(e){}
