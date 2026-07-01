@@ -96,6 +96,15 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 </div>
 <div class="builder-panel" id="builder">
 <div class="panel-header"><h2>加入新站點</h2><p>搜尋路線，再選方向與站點。</p></div>
+<div class="section-block">
+<h3 style="font-size:15px;font-weight:700;color:var(--text-h);margin-bottom:8px">批量加入：搜尋車站（九巴）</h3>
+<input id="bulk-stop-search" placeholder="例如 尖沙咀碼頭" style="width:100%;border:1px solid var(--border);border-radius:14px;background:var(--input-bg);color:var(--text-h);padding:10px 14px;font:inherit;font-size:14px;margin-bottom:8px;box-sizing:border-box">
+<div class="stop-list" id="bulk-stop-results" style="max-height:200px"></div>
+<div id="bulk-dir-section" style="display:none;margin-top:8px">
+<div class="choice-list" id="bulk-dir-list"></div>
+<button type="button" class="primary-button" id="bulk-add-btn" style="margin-top:8px">加入路線</button>
+</div>
+</div>
 <label class="field"><span>搜尋路線</span><input id="route-search" placeholder="例如 1A、970、機場"></label>
 <div class="result-list" id="result-list"></div>
 <div class="section-block" id="dir-block" style="display:none"><h3>方向</h3><div class="choice-list" id="dir-list"></div></div>
@@ -141,6 +150,7 @@ var Q=document.getElementById.bind(document)
 
 var mr=Q('result-list'),md=Q('dir-block'),mdr=Q('dir-list'),ms=Q('stop-block'),mst=Q('stop-list'),mab=Q('add-btn'),msf=Q('stop-filter')
 var mtb=Q('tabs-bar'),mtn=Q('tab-name'),mfg=Q('favourite-grid'),mfp=Q('fastest-panel'),mfgg=Q('fastest-grid')
+var bs=Q('bulk-stop-search'),brs=Q('bulk-stop-results'),bds=Q('bulk-dir-section'),bdl=Q('bulk-dir-list'),bab=Q('bulk-add-btn')
 
 function at(){var t=M.tabs.find(function(x){return x.id===M.activeTabId});return t||M.tabs[0]}
 
@@ -393,6 +403,76 @@ mab.addEventListener('click',function(){
   renderBoard()
   refreshEtas()
   saveAll()
+})
+
+// ---- bulk stop route add ----
+var bulkStops=null,bulkRS=null,bulkRoutes=null,bulkBusy=false
+var bulkStop=null,bulkDir=''
+
+function loadBulkData(cb){
+  if(bulkRS){if(cb)cb();return}
+  if(bulkBusy){var id=setInterval(function(){if(bulkRS){clearInterval(id);if(cb)cb()}},200);return}
+  bulkBusy=true
+  var c=0
+  function done(){c++;if(c<2){if(cb)cb();return}gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,r){if(!e&&r)bulkRoutes=r.data;bulkRS=true;bulkBusy=false;if(cb)cb()})}
+  gt('https://data.etabus.gov.hk/v1/transport/kmb/stop',function(e,r){if(!e&&r)bulkStops=r.data;done()})
+  gt('https://data.etabus.gov.hk/v1/transport/kmb/route-stop/',function(e,r){if(!e&&r)bulkRS=r.data;done()})
+}
+
+var bulkTimer=null
+bs.addEventListener('input',function(){
+  clearTimeout(bulkTimer)
+  bulkTimer=setTimeout(function(){
+    var q=bs.value.trim().toLowerCase()
+    if(!q){brs.innerHTML='';bds.style.display='none';return}
+    loadBulkData(function(){
+      if(!bulkStops)return
+      brs.innerHTML=''
+      var hits=bulkStops.filter(function(s){return s.name_tc.indexOf(q)!==-1||s.name_en.toLowerCase().indexOf(q)!==-1}).slice(0,50)
+      hits.forEach(function(s){
+        brs.appendChild(el('button',{cls:'result-card'+(bulkStop&&bulkStop.stop===s.stop?' selected':''),ev:{click:function(){selectBulkStop(s)}}},el('strong',null,s.name_tc),el('span',null,s.name_en)))
+      })
+    })
+  },300)
+})
+
+function selectBulkStop(s){
+  bulkStop=s
+  bds.style.display=''
+  bdl.innerHTML=''
+  var dirs={},seen={}
+  bulkRS.forEach(function(r){
+    if(r.stop!==s.stop)return
+    var key=r.bound+'-'+r.service_type
+    if(seen[key])return
+    seen[key]=1
+    dirs[key]={bound:r.bound,serviceType:r.service_type}
+  })
+  var keys=Object.keys(dirs)
+  if(!keys.length){bdl.innerHTML='<span class="muted">此站沒有路線資料</span>';bab.style.display='none';return}
+  bab.style.display=''
+  keys.forEach(function(k){
+    var d=dirs[k]
+    var label=d.bound==='O'?'去程':'回程'
+    if(d.serviceType!=='1')label=label+' (特'+d.serviceType+')'
+    bdl.appendChild(el('button',{cls:'choice-chip'+(bulkDir===k?' selected':''),ev:{click:function(){bulkDir=k;bdl.querySelectorAll('button').forEach(function(b){b.className='choice-chip'+(b.textContent===label?' selected':'')})}}},el('span',null,label)))
+  })
+}
+
+bab.addEventListener('click',function(){
+  var t=at();if(!t||!bulkStop||!bulkDir)return
+  var parts=bulkDir.split('-')
+  var bound=parts[0],stype=parts[1]
+  var matches=bulkRS.filter(function(r){return r.stop===bulkStop.stop&&r.bound===bound&&r.service_type===stype})
+  var added=0
+  matches.forEach(function(r){
+    var rtData=bulkRoutes?bulkRoutes.find(function(x){return x.route===r.route&&x.bound===r.bound&&x.service_type===r.service_type}):null
+    var sm=rtData?rtData.orig_tc+' -> '+rtData.dest_tc:r.route
+    var dl=sm
+    var nf={id:uid(),op:'kmb',on:'九巴/龍運',rt:r.route,sm:sm,dir:bt(bound),dl:dl,stype:stype,sid:bulkStop.stop,snt:bulkStop.name_tc,sne:bulkStop.name_en}
+    if(!t.favourites.some(function(x){return fk(x)===fk(nf)})){t.favourites.push(nf);added++}
+  })
+  if(added){renderBoard();refreshEtas();saveAll();bs.value='';brs.innerHTML='';bds.style.display='none';bulkStop=null;bulkDir=''}
 })
 
 // ---- persistence ----
