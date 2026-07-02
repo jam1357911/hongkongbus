@@ -237,12 +237,16 @@ function renderFastest(){
 // ---- ETA refresh ----
 function refreshEtas(){
   var t=at();if(!t||!t.favourites.length)return
-  t.favourites.forEach(function(f){M.etaMap[f.id]=M.etaMap[f.id]||{};M.etaMap[f.id].loading=true})
+  var tabId=t.id
+  t.favourites.forEach(function(f){M.etaMap[f.id]=M.etaMap[f.id]||{};M.etaMap[f.id].loading=true;delete M.etaMap[f.id].error})
   renderFavourites()
   t.favourites.forEach(function(f){
     var fn=f.op==='kmb'?gt:gs
     var url=f.op==='kmb'?'https://data.etabus.gov.hk/v1/transport/kmb/eta/'+encodeURIComponent(f.sid)+'/'+encodeURIComponent(f.rt)+'/'+encodeURIComponent(f.stype):'https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/'+encodeURIComponent(f.sid)+'/'+encodeURIComponent(f.rt)
+    var timedOut=false,timeoutId=setTimeout(function(){timedOut=true;M.etaMap[f.id]={loading:false,items:[],error:'請求逾時',ts:null};renderFavourites();if(at().favourites.length>=3)renderFastest()},10000)
     fn(url,function(err,r){
+      if(timedOut||at().id!==tabId)return
+      clearTimeout(timeoutId)
       if(err)M.etaMap[f.id]={loading:false,items:[],error:err.message,ts:null}
       else if(!r||!r.data)M.etaMap[f.id]={loading:false,items:[],error:null,ts:new Date().toISOString()}
       else{
@@ -250,7 +254,7 @@ function refreshEtas(){
         M.etaMap[f.id]={loading:false,items:items,error:null,ts:new Date().toISOString()}
       }
       renderFavourites()
-      if(t.favourites.length>=3)renderFastest()
+      if(at().favourites.length>=3)renderFastest()
     })
   })
 }
