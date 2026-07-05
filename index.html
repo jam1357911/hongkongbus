@@ -150,7 +150,7 @@ var mr=Q('result-list'),md=Q('dir-block'),mdr=Q('dir-list'),ms=Q('stop-block'),m
 var mtb=Q('tabs-bar'),mtn=Q('tab-name'),mfg=Q('favourite-grid'),mfp=Q('fastest-panel'),mfgg=Q('fastest-grid'),mrb=Q('rename-btn')
  var bs=Q('bulk-stop-search'),brs=Q('bulk-stop-results'),bab=Q('bulk-add-btn')
 
-function at(){var t=M.tabs.find(function(x){return x.id===M.activeTabId});return t||M.tabs[0]}
+function at(){var t=M.tabs.find(function(x){return x.id===M.activeTabId});if(!t&&M.tabs.length>0){t=M.tabs[0];M.activeTabId=t.id}return t}
 
 // ---- tabs ----
 function renderTabs(){
@@ -518,6 +518,11 @@ mab.addEventListener('click',function(){
        var h=window.location.hash.slice(1)
        if(h){var p=JSON.parse(decodeURIComponent(h));if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;try{localStorage.setItem('hk-bus-v5',h)}catch(e){};_loaded=true}}
      }catch(e2){}
+   }
+   // 确保 activeTabId 对应的分頁存在，否则使用第一个分頁
+   var activeTab = M.tabs.find(function(x){return x.id===M.activeTabId})
+   if(!activeTab && M.tabs.length>0){
+     M.activeTabId = M.tabs[0].id
    }
    M._ready=true
    renderBoard()
