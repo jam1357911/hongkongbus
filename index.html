@@ -174,18 +174,21 @@ function renderTabs(){
 }
 
 mtn.addEventListener('input', function() {
-    var t = at();
-    if (t) {
-        t.name = mtn.value;
-        // 延迟保存以避免频繁的存储操作
-        clearTimeout(mtn._saveTimeout);
-        mtn._saveTimeout = setTimeout(function() {
+    // 不在 input 事件中修改分頁名称，只保存到 localStorage
+    // 分頁名称只在 blur 或按 Enter 时才真正保存到分頁对象
+});
+
+mtn.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        var t = at();
+        if (t) {
+            t.name = mtn.value;
             saveAll();
-        }, 300);
+        }
+        mtn.blur();
     }
 });
 
-// 添加失去焦点事件监听器，确保分頁名在输入完成后立即保存
 mtn.addEventListener('blur', function() {
     var t = at();
     if (t) {
