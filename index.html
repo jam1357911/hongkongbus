@@ -86,6 +86,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 <div class="tabs-bar" id="tabs-bar"></div>
 <div class="tab-meta">
 <label class="field"><span>分頁名稱</span><input id="tab-name"></label>
+<button type="button" class="secondary-button" id="rename-btn">重新命名</button>
 <p class="muted">資料保存在瀏覽器本機。</p>
 </div>
 <div id="fastest-panel" style="display:none">
@@ -146,7 +147,7 @@ function gs(u,cb){
 var Q=document.getElementById.bind(document)
 
 var mr=Q('result-list'),md=Q('dir-block'),mdr=Q('dir-list'),ms=Q('stop-block'),mst=Q('stop-list'),mab=Q('add-btn'),msf=Q('stop-filter')
-var mtb=Q('tabs-bar'),mtn=Q('tab-name'),mfg=Q('favourite-grid'),mfp=Q('fastest-panel'),mfgg=Q('fastest-grid')
+var mtb=Q('tabs-bar'),mtn=Q('tab-name'),mfg=Q('favourite-grid'),mfp=Q('fastest-panel'),mfgg=Q('fastest-grid'),mrb=Q('rename-btn')
  var bs=Q('bulk-stop-search'),brs=Q('bulk-stop-results'),bab=Q('bulk-add-btn')
 
 function at(){var t=M.tabs.find(function(x){return x.id===M.activeTabId});return t||M.tabs[0]}
@@ -191,6 +192,15 @@ mtn.addEventListener('blur', function() {
     var t = at();
     if (t) {
         mtn.value = t.name;
+    }
+});
+
+mrb.addEventListener('click', function() {
+    var t = at();
+    if (t) {
+        t.name = mtn.value;
+        saveAll();
+        renderBoard();
     }
 });
 
