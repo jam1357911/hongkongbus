@@ -174,41 +174,46 @@ function renderTabs(){
   mtb.appendChild(l);mtb.appendChild(a)
 }
 
+var _pendingName=''
+
+mtn.addEventListener('input', function() {
+    _pendingName=mtn.value
+})
+
 mtn.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        renameTab();
-        mtn.blur();
-    } else if (e.key === 'Escape') {
-        mtn.value = at().name;
-        mtn.blur();
+    if(e.key==='Enter'){
+        var t=at()
+        if(t&&_pendingName){t.name=_pendingName;saveAll();renderTabs()}
+        _pendingName=''
+        mtn.blur()
+    }else if(e.key==='Escape'){
+        _pendingName=''
+        mtn.value=at().name
+        mtn.blur()
     }
-});
+})
 
 mtn.addEventListener('blur', function() {
-    var t = at();
-    if (t) {
-        mtn.value = t.name;
-    }
-});
+    var t=at()
+    if(t)mtn.value=t.name
+    _pendingName=''
+})
 
-function renameTab() {
-    var t = at();
-    if (t) {
-        t.name = mtn.value;
-        saveAll();
-        renderTabs();
-    }
+function renameTab(){
+    var t=at()
+    if(t&&_pendingName){t.name=_pendingName;saveAll();renderTabs()}
+    _pendingName=''
 }
 
-mrb.addEventListener('mousedown', function(e) {
-    renameTab();
-    e.preventDefault();
-});
+mrb.addEventListener('mousedown',function(e){
+    renameTab()
+    e.preventDefault()
+})
 
-mrb.addEventListener('touchstart', function(e) {
-    renameTab();
-    e.preventDefault();
-});
+mrb.addEventListener('touchstart',function(e){
+    renameTab()
+    e.preventDefault()
+})
 
 function renderBoard(){
   renderTabs()
