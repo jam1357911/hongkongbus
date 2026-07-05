@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>香港巴士到站時間</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--panel-bg:#fff;--border:#e5e4e7;--card-muted:rgba(244,243,236,0.6);--text:#6b6375;--text-h:#08060d;--accent:#aa3bff;--accent-bg:rgba(170,59,255,0.1);--accent-border:rgba(170,59,255,0.5);--input-bg:#fff;--shadow:rgba(0,0,0,0.08)0 4px 12px}
+@media(prefers-color-scheme:dark){
+:root{--panel-bg:#16171d;--border:#2e303a;--card-muted:rgba(47,48,58,0.5);--text:#9ca3af;--text-h:#f3f4f6;--accent:#c084fc;--accent-bg:rgba(192,132,252,0.15);--accent-border:rgba(192,132,252,0.5);--input-bg:#1f2028;--shadow:rgba(0,0,0,0.4)0 4px 12px}}
+body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--text);-webkit-font-smoothing:antialiased;min-height:100svh}
+#root{display:flex;flex-direction:column;gap:16px;padding:16px;max-width:1200px;margin:0 auto}
+.board-panel,.builder-panel{background:var(--panel-bg);border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow)}
+.board-panel{order:0}.builder-panel{order:2}
+.tabs-bar{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.tab-list{display:flex;gap:8px;flex-wrap:wrap}
+.tab-button{border:1px solid transparent;background:var(--card-muted);color:var(--text-h);padding:10px 14px;border-radius:999px;cursor:pointer;font:inherit;font-size:20px;font-weight:600}
+.tab-button.active,.tab-button:hover{border-color:var(--accent);background:var(--accent-bg)}
+.tab-actions{display:flex;gap:8px}
+.tab-meta{display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:16px}
+.tab-meta .field{flex:1}
+.field{display:flex;flex-direction:column;gap:6px}
+.field span{font-size:14px;font-weight:700;color:var(--text-h)}
+.field input,.section-title input{width:100%;border:1px solid var(--border);border-radius:14px;background:var(--input-bg);color:var(--text-h);padding:10px 14px;font:inherit;font-size:14px}
+.panel-header{margin-bottom:16px}
+.panel-header h2{font-size:18px;color:var(--text-h)}
+.panel-header p{font-size:14px}
+.secondary-button{background:var(--card-muted);color:var(--text-h);border:1px solid transparent;padding:10px 14px;border-radius:14px;cursor:pointer;font:inherit;font-size:14px;font-weight:600}
+.secondary-button:hover{border-color:var(--accent-border)}
+.secondary-button:disabled{opacity:.5;cursor:not-allowed}
+.fastest-panel{margin-bottom:0}
+.fastest-panel-header h3{font-size:15px;color:var(--text-h);font-weight:700;margin:0 0 4px}
+.fastest-panel-header p{font-size:13px;color:var(--text)}
+.fastest-grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(240px,1fr))}
+.fastest-card{background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px}
+.fastest-rank{font-size:17px;font-weight:700;color:var(--accent)}
+.fastest-card strong{font-size:26px;color:var(--text-h)}
+.fastest-card span{font-size:18px;color:var(--text-h)}
+.fastest-card small{font-size:17px;color:var(--text);font-weight:700}
+.favourite-grid{display:grid;gap:12px;margin-top:32px}
+.eta-card{border:1px solid var(--border);border-radius:20px;padding:16px;background:#c62828}
+.eta-card-header{display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:12px}
+.badge-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.route-badge{display:inline-flex;align-items:center;background:var(--accent-bg);color:#fff;padding:8px 12px;border-radius:999px}
+.route-badge-text{font-size:26px;line-height:1;font-weight:800}
+.operator-badge{display:inline-flex;align-items:center;background:rgba(255,255,255,.18);color:#fff6f6;border-radius:999px;padding:6px 10px;font-size:13px;font-weight:700}
+.eta-card h3{font-size:17px;font-weight:700;color:#fff6f6;margin-bottom:4px}
+.eta-card p,.eta-card .muted,.eta-card .eta-footer,.eta-card .eta-row span,.eta-card .eta-row small{color:#fff6f6}
+.eta-card-actions{display:flex;gap:8px;flex-shrink:0}
+.icon-button{background:rgba(255,255,255,.16);color:#fff;border:1px solid transparent;padding:8px 12px;border-radius:12px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;white-space:nowrap}
+.icon-button:hover{border-color:rgba(255,255,255,.55)}
+.eta-list{display:grid;gap:8px}
+.eta-row{display:flex;justify-content:space-between;gap:12px;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.16)}
+.eta-row div{display:flex;flex-direction:column;gap:2px}
+.eta-row strong{font-size:18px;color:#fff;font-weight:800}
+.eta-row span{font-size:14px}.eta-row small{font-size:13px;color:var(--text)}
+.eta-footer{margin-top:12px;font-size:13px;opacity:.85}
+.empty-card{padding:32px;border-radius:20px;border:1px dashed var(--border);background:var(--card-muted);text-align:center}
+.empty-card h3{font-size:16px;color:var(--text-h);margin-bottom:8px}
+.empty-card p{font-size:14px;color:var(--text)}
+.section-block{margin-bottom:16px}
+.section-block h3{font-size:15px;font-weight:700;color:var(--text-h);margin-bottom:8px}
+.section-title{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}
+.section-title h3{font-size:15px;font-weight:700;color:var(--text-h);margin:0}
+.section-title input{max-width:200px}
+.result-list,.choice-list,.stop-list{display:grid;gap:8px;max-height:300px;overflow:auto}
+.result-card,.choice-chip,.stop-row{text-align:left;background:var(--card-muted);color:var(--text-h);border-radius:14px;padding:12px;border:1px solid transparent;cursor:pointer;font:inherit}
+.result-card:hover,.choice-chip:hover,.stop-row:hover{border-color:var(--accent-border)}
+.result-card.selected,.choice-chip.selected,.stop-row.selected{border-color:var(--accent);background:var(--accent-bg)}
+.result-card strong,.choice-chip strong{display:block;font-size:15px;margin-bottom:4px}
+.result-card span,.choice-chip span,.stop-name{font-size:13px;color:var(--text)}
+.stop-row{display:grid;grid-template-columns:32px 1fr;gap:10px;align-items:center}
+.stop-seq{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:999px;background:rgba(255,255,255,.55);color:var(--text-h);font-weight:700;font-size:13px}
+.muted{font-size:14px;color:var(--text)}
+.error-text{font-size:14px;color:#dc2626}
+.primary-button{width:100%;background:linear-gradient(135deg,var(--accent),#4f46e5);color:#fff;border:none;padding:12px 18px;border-radius:14px;cursor:pointer;font:inherit;font-size:15px;font-weight:700}
+.primary-button:hover{opacity:.92}
+.primary-button:disabled{opacity:.5;cursor:not-allowed}
+@media(min-width:768px){.fastest-grid{grid-template-columns:repeat(3,1fr)}}
+</style>
+</head>
+<body>
+<div id="root">
+<div class="board-panel" id="board">
+<div class="tabs-bar" id="tabs-bar"></div>
+<div class="tab-meta">
+<label class="field"><span>分頁名稱</span><input id="tab-name"></label>
+<p class="muted">資料保存在瀏覽器本機。</p>
+</div>
+<div id="fastest-panel" style="display:none">
+<div class="fastest-panel-header"><h3>最快到站 3 條路線</h3><p>根據這個分頁每個站的首班 ETA 排序</p></div>
+<div class="fastest-grid" id="fastest-grid"></div>
+</div>
+<div class="favourite-grid" id="favourite-grid"></div>
+</div>
+<div class="builder-panel" id="builder">
+<div class="panel-header"><h2>加入新站點</h2><p>搜尋路線，再選方向與站點。</p></div>
+<div class="section-block">
+<h3 style="font-size:15px;font-weight:700;color:var(--text-h);margin-bottom:8px">批量加入：搜尋車站（九巴）</h3>
+<input id="bulk-stop-search" placeholder="例如 尖沙咀碼頭" style="width:100%;border:1px solid var(--border);border-radius:14px;background:var(--input-bg);color:var(--text-h);padding:10px 14px;font:inherit;font-size:14px;margin-bottom:8px;box-sizing:border-box">
+<div class="stop-list" id="bulk-stop-results" style="max-height:200px"></div>
+<button type="button" class="primary-button" id="bulk-add-btn" style="display:none;margin-top:8px">加入所有路線</button>
+</div>
+<label class="field"><span>搜尋路線</span><input id="route-search" placeholder="例如 1A、970、機場"></label>
+<div class="result-list" id="result-list"></div>
+<div class="section-block" id="dir-block" style="display:none"><h3>方向</h3><div class="choice-list" id="dir-list"></div></div>
+<div class="section-block" id="stop-block" style="display:none">
+<div class="section-title"><h3>站點</h3><input id="stop-filter" placeholder="過濾站點"></div>
+<div class="stop-list" id="stop-list"></div>
+</div>
+<button type="button" class="primary-button" id="add-btn" disabled>加入目前分頁</button>
+</div>
+</div>
+<script>
+(function(){
+var M={tabs:[],activeTabId:'',collapsed:{},selectedRoute:null,selectedDir:null,stops:[],selectedStopId:'',etaMap:{}}
+
+function el(t,c){
+  var e=document.createElement(t)
+  if(c)for(var k in c){var v=c[k];if(k==='cls')e.className=v;else if(k==='ev')for(var en in v)e.addEventListener(en,v[en]);else e[k]=v}
+  for(var i=2;i<arguments.length;i++){var ch=arguments[i];if(typeof ch==='string'||typeof ch==='number')e.textContent=ch;else if(ch&&ch.nodeType)e.appendChild(ch);else if(ch&&ch.length)for(var j=0;j<ch.length;j++)e.appendChild(ch[j])}
+  return e
+}
+
+function uid(){return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
+function defTab(i){return{id:uid(),name:'分頁 '+i,favourites:[]}}
+function fmt(eta){if(!eta)return'--';var m=Math.round((new Date(eta).getTime()-Date.now())/60000);return m<=0?'即將到站':m+' 分鐘'}
+function fk(f){return f.op+':'+f.rt+':'+f.dir+':'+f.stype+':'+f.sid}
+function dc(d){return d==='outbound'?'O':'I'}
+function bt(b){return b==='O'?'outbound':'inbound'}
+
+function gt(u,cb){
+  fetch(u,{headers:{accept:'application/json'}})
+    .then(function(r){if(!r.ok)throw Error('ERR'+r.status);return r.json()})
+    .then(function(d){cb(null,d)})
+    .catch(function(e){cb(e,null)})
+}
+function gs(u,cb){
+  fetch(u,{headers:{accept:'application/json'}})
+    .then(function(r){if(!r.ok){cb(null,null);return}return r.json()})
+    .then(function(d){cb(null,d)})
+    .catch(function(e){cb(null,null)})
+}
+
+var Q=document.getElementById.bind(document)
+
+var mr=Q('result-list'),md=Q('dir-block'),mdr=Q('dir-list'),ms=Q('stop-block'),mst=Q('stop-list'),mab=Q('add-btn'),msf=Q('stop-filter')
+var mtb=Q('tabs-bar'),mtn=Q('tab-name'),mfg=Q('favourite-grid'),mfp=Q('fastest-panel'),mfgg=Q('fastest-grid')
+ var bs=Q('bulk-stop-search'),brs=Q('bulk-stop-results'),bab=Q('bulk-add-btn')
+
+function at(){var t=M.tabs.find(function(x){return x.id===M.activeTabId});return t||M.tabs[0]}
+
+// ---- tabs ----
+function renderTabs(){
+  mtb.innerHTML=''
+  var l=el('div',{cls:'tab-list'})
+  M.tabs.forEach(function(t){
+    l.appendChild(el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),ev:{click:function(){M.activeTabId=t.id;renderBoard()}}},t.name))
+  })
+  var a=el('div',{cls:'tab-actions'})
+  a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){
+    // 首先确保当前分頁的名称已保存
+    var currentTab = at();
+    if (currentTab) {
+      currentTab.name = mtn.value;
+      saveAll();
+    }
+    // 然后新增分頁
+    var t2 = defTab(M.tabs.length + 1);
+    M.tabs.push(t2);
+    M.activeTabId = t2.id;
+    renderBoard();
+  }}},'新增分頁'))
+  a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){if(M.tabs.length<2)return;M.tabs=M.tabs.filter(function(x){return x.id!==M.activeTabId});M.activeTabId=M.tabs[0]?M.tabs[0].id:'';renderBoard()}}},'刪除分頁'))
+  mtb.appendChild(l);mtb.appendChild(a)
+}
+
+mtn.addEventListener('input',function(){var t=at();if(t){t.name=mtn.value;saveAll()}})
+
+function renderBoard(){
+  renderTabs()
+  var t=at();if(!t)return
+  mtn.value=t.name
+  renderFavourites()
+  renderFastest()
+  // 移除自动保存逻辑，避免页面加载时覆盖数据
+}
+
+// ---- favourites ----
+function renderFavourites(){
+  mfg.innerHTML=''
+  var t=at();if(!t)return
+  if(!t.favourites.length){
+    mfg.innerHTML='<div class="empty-card"><h3>這個分頁還沒有站點</h3><p>往下拉加入新站點，搜尋路線、選方向和站點，然後加入目前分頁即可。</p></div>'
+    return
+  }
+  t.favourites.forEach(function(f){
+    var s=M.etaMap[f.id]||{loading:true,items:[]}
+    var c=M.collapsed[f.id]||false
+    var vi=c?s.items.slice(0,1):s.items
+    var badge=el('div',{cls:'badge-row'},
+      el('span',{cls:'route-badge'},el('span',{cls:'route-badge-text'},f.rt)),
+      el('span',{cls:'operator-badge'},f.on)
+    )
+    var left=el('div',null,badge,el('h3',null,f.snt))
+    var togBtn=el('button',{cls:'icon-button',ev:{click:function(){M.collapsed[f.id]=!M.collapsed[f.id];renderFavourites();saveAll()}}},c?'顯示全部':'只顯示首班')
+    var remBtn=el('button',{cls:'icon-button',ev:{click:function(){var ta=at();ta.favourites=ta.favourites.filter(function(x){return x.id!==f.id});delete M.etaMap[f.id];delete M.collapsed[f.id];renderBoard();saveAll()}}},'移除')
+    var hdr=el('div',{cls:'eta-card-header'},left,el('div',{cls:'eta-card-actions'},togBtn,remBtn))
+    var elist=el('div',{cls:'eta-list'})
+    if(s.loading)elist.appendChild(el('p',{cls:'muted'},'更新 ETA 中...'))
+    else if(s.error)elist.appendChild(el('p',{cls:'error-text'},s.error))
+    else if(!s.items.length)elist.appendChild(el('p',{cls:'muted'},'暫時沒有未來班次資料。'))
+    else vi.forEach(function(item){
+      elist.appendChild(el('div',{cls:'eta-row'},
+        el('div',null,el('strong',null,fmt(item.eta)),el('span',null,fmtClock(item.eta))),
+        el('div',null,el('span',null,item.dt),el('small',null,item.rt||'正常班次'))
+      ))
+    })
+    var footer=f.sm+(s.ts?' · 更新於 '+new Date(s.ts).toLocaleTimeString('zh-HK'):'')
+    mfg.appendChild(el('div',{cls:'eta-card'},hdr,elist,el('p',{cls:'eta-footer'},footer)))
+  })
+}
+
+function fmtClock(eta){return eta?new Date(eta).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit'}):'--'}
+
+function renderFastest(){
+  mfp.style.display='none';mfgg.innerHTML=''
+  var t=at();if(!t||t.favourites.length<3)return
+  var br={}
+  t.favourites.forEach(function(f){
+    var s=M.etaMap[f.id];if(!s||s.loading||s.error||!s.items||!s.items.length)return
+    var first=s.items[0];if(!first||!first.eta)return
+    if(!br[f.rt]||new Date(first.eta).getTime()<new Date(br[f.rt].eta).getTime())br[f.rt]={fid:f.id,rt:f.rt,snt:f.snt,on:f.on,eta:first.eta}
+  })
+  var sv=Object.values(br).sort(function(a,b){return new Date(a.eta).getTime()-new Date(b.eta).getTime()})
+  if(sv.length<3)return
+  mfp.style.display=''
+  sv.slice(0,3).forEach(function(item,i){
+    mfgg.appendChild(el('div',{cls:'fastest-card'},
+      el('span',{cls:'fastest-rank'},'#'+(i+1)),
+      el('strong',null,item.rt),
+      el('span',null,item.snt),
+      el('small',null,item.on+' · '+fmt(item.eta)+' · '+fmtClock(item.eta))
+    ))
+  })
+}
+
+// ---- ETA refresh ----
+function refreshEtas(){
+  var t=at();if(!t||!t.favourites.length)return
+  var tabId=t.id
+  t.favourites.forEach(function(f){M.etaMap[f.id]=M.etaMap[f.id]||{};M.etaMap[f.id].loading=true;delete M.etaMap[f.id].error})
+  renderFavourites()
+  t.favourites.forEach(function(f){
+    var fn=f.op==='kmb'?gt:gs
+    var url=f.op==='kmb'?'https://data.etabus.gov.hk/v1/transport/kmb/eta/'+encodeURIComponent(f.sid)+'/'+encodeURIComponent(f.rt)+'/'+encodeURIComponent(f.stype):'https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/'+encodeURIComponent(f.sid)+'/'+encodeURIComponent(f.rt)
+    var timedOut=false,timeoutId=setTimeout(function(){timedOut=true;M.etaMap[f.id]={loading:false,items:[],error:'請求逾時',ts:null};renderFavourites();if(at().favourites.length>=3)renderFastest()},10000)
+    fn(url,function(err,r){
+      if(timedOut||at().id!==tabId)return
+      clearTimeout(timeoutId)
+      if(err)M.etaMap[f.id]={loading:false,items:[],error:err.message,ts:null}
+      else if(!r||!r.data)M.etaMap[f.id]={loading:false,items:[],error:null,ts:new Date().toISOString()}
+      else{
+        var items=r.data.filter(function(x){var ok=x.dir===dc(f.dir)&&x.eta;if(f.op==='kmb')ok=ok&&String(x.service_type)===f.stype;return ok}).sort(function(a,b){return a.eta_seq-b.eta_seq}).slice(0,3).map(function(x){return{eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}})
+        M.etaMap[f.id]={loading:false,items:items,error:null,ts:new Date().toISOString()}
+      }
+      renderFavourites()
+      if(at().favourites.length>=3)renderFastest()
+    })
+  })
+}
+
+// ---- route search ----
+var searchTimer=null
+Q('route-search').addEventListener('input',function(){
+  clearTimeout(searchTimer)
+  searchTimer=setTimeout(function(){
+    mr.innerHTML='<span class="muted">搜尋中...</span>'
+    var w=Q('route-search').value.trim().toLowerCase()
+    var all=[],seen={},c1=0,c2=0
+
+    function done(){
+      if(c1+c2<2)return
+      all.sort(function(a,b){return a.rt.localeCompare(b.rt,'en',{numeric:true})})
+      mr.innerHTML=''
+      var filtered=w?all.filter(function(i){return i.mt.indexOf(w)!==-1}):all.slice(0,80)
+      filtered.forEach(function(i){
+        mr.appendChild(el('button',{cls:'result-card'+(M.selectedRoute&&M.selectedRoute.op===i.op&&M.selectedRoute.rt===i.rt?' selected':''),ev:{click:function(){M.selectedRoute=i;renderRouteSelected()}}},el('strong',null,i.on+' '+i.rt),el('span',null,i.sm)))
+      })
+    }
+
+    gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,kmb){
+      c1=1
+      if(!e&&kmb)kmb.data.forEach(function(r){var k='kmb:'+r.route;if(!seen[k]){seen[k]=1;all.push({op:'kmb',on:'九巴/龍運',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+r.orig_tc+r.dest_tc+r.orig_en+r.dest_en).toLowerCase()})}})
+      done()
+    })
+    gs('https://rt.data.gov.hk/v2/transport/citybus/route/CTB',function(e,ctb){
+      c2=1
+      if(ctb)ctb.data.forEach(function(r){var k='ctb:'+r.route;if(!seen[k]){seen[k]=1;all.push({op:'ctb',on:'城巴',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+r.orig_tc+r.dest_tc+r.orig_en+r.dest_en).toLowerCase()})}})
+      done()
+    })
+  },350)
+})
+
+// ---- directions ----
+function renderRouteSelected(){
+  md.style.display='';mdr.innerHTML='';ms.style.display='none';M.selectedDir=null;M.stops=[];M.selectedStopId='';mab.disabled=true
+  mdr.innerHTML='<span class="muted">載入方向中...</span>'
+  var sr=M.selectedRoute
+  if(sr.op==='kmb'){
+    gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,kmb){
+      if(sr!==M.selectedRoute)return
+      if(e){mdr.innerHTML='<span class="error-text">'+e.message+'</span>';return}
+      var opts=kmb.data.filter(function(x){return x.route.toLowerCase()===sr.rt.toLowerCase()}).map(function(x){return{direction:bt(x.bound),directionCode:x.bound,serviceType:x.service_type,label:x.orig_tc+' -> '+x.dest_tc+(x.service_type!=='1'?'(特'+x.service_type+')':''),stopCount:0}})
+      var seen={},out=[]
+      opts.forEach(function(o){var k=o.direction+'-'+o.serviceType;if(!seen[k]){seen[k]=1;out.push(o)}})
+      renderDirs(out)
+    })
+  }else{renderCtbDirs(sr.rt)}
+}
+
+function renderCtbDirs(rt){
+  var dirs=[],p1=0,p2=0
+  function check(){if(p1<2||p2<4)return;var out=dirs.filter(Boolean);renderDirs(out)}
+  for(var i=0;i<2;i++){(function(idx){loadOne(idx===0?'outbound':'inbound')})(i)}
+  function loadOne(dir){
+    gs('https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/'+encodeURIComponent(rt)+'/'+dir,function(e,cr){
+      p1++;if(!cr||!cr.data||!cr.data.length){check();return}
+      gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(cr.data[0].stop),function(e2,fr){
+        p2++
+        gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(cr.data[cr.data.length-1].stop),function(e3,lr){
+          p2++
+          var fn=fr&&fr.data?fr.data.name_tc:'起點'
+          var ln=lr&&lr.data?lr.data.name_tc:'終點'
+          var idx=dir==='outbound'?0:1
+          dirs[idx]={direction:dir,directionCode:dir==='outbound'?'O':'I',serviceType:'1',label:fn+' -> '+ln,stopCount:cr.data.length}
+          check()
+        })
+      })
+    })
+  }
+}
+
+function renderDirs(out){
+  mdr.innerHTML=''
+  out.forEach(function(d){
+    mdr.appendChild(el('button',{cls:'choice-chip'+(M.selectedDir&&M.selectedDir.direction===d.direction&&M.selectedDir.serviceType===d.serviceType?' selected':''),ev:{click:function(){M.selectedDir=d;renderDirSelected();renderStops()}}},
+      el('strong',null,d.label),
+      el('span',null,(d.direction==='outbound'?'去程':'回程')+(d.serviceType!=='1'?'·班次'+d.serviceType:'')+(d.stopCount>0?'·'+d.stopCount+'站':''))
+    ))
+  })
+  if(!out.length)mdr.innerHTML='<span class="muted">這條路線目前沒有方向資料。</span>'
+}
+
+function renderDirSelected(){
+  var btns=mdr.querySelectorAll('button')
+  btns.forEach(function(b){
+    var sd=M.selectedDir;if(!sd)return
+    var label=b.querySelector('strong').textContent
+    b.className=label===sd.label?'choice-chip selected':'choice-chip'
+  })
+}
+
+// ---- stops ----
+function renderStops(){
+  ms.style.display='';mst.innerHTML='<span class="muted">載入站點中...</span>';M.stops=[];M.selectedStopId='';mab.disabled=true;Q('stop-filter').value=''
+  var sr=M.selectedRoute,sd=M.selectedDir
+  if(sr.op==='kmb'){
+    var url1='https://data.etabus.gov.hk/v1/transport/kmb/route-stop/'+encodeURIComponent(sr.rt)+'/'+encodeURIComponent(sd.direction)+'/'+encodeURIComponent(sd.serviceType)
+    gt(url1,function(e1,rs){
+      if(sr!==M.selectedRoute||sd!==M.selectedDir)return
+      if(e1){mst.innerHTML='<span class="error-text">'+e1.message+'</span>';return}
+      gt('https://data.etabus.gov.hk/v1/transport/kmb/stop',function(e2,as){
+        if(sr!==M.selectedRoute||sd!==M.selectedDir)return
+        if(e2){mst.innerHTML='<span class="error-text">'+e2.message+'</span>';return}
+        var sm={};as.data.forEach(function(s){sm[s.stop]={n:s.name_tc,e:s.name_en}})
+        M.stops=rs.data.map(function(r){return{stopId:r.stop,seq:Number(r.seq),nameTc:sm[r.stop]?sm[r.stop].n:'站'+r.stop.slice(0,6),nameEn:sm[r.stop]?sm[r.stop].e:'Stop '+r.stop.slice(0,6)}})
+        renderStopList()
+      })
+    })
+  }else{renderCtbStopList(sr.rt,sd.direction)}
+}
+
+function renderCtbStopList(rt,dir){
+  gs('https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/'+encodeURIComponent(rt)+'/'+encodeURIComponent(dir),function(e,cr){
+    if(M.selectedRoute.rt!==rt||(M.selectedDir||{}).direction!==dir)return
+    if(!cr||!cr.data){mst.innerHTML='';return}
+    var out=[],cnt=0,don=false,total=cr.data.length
+    cr.data.forEach(function(rec,i){
+      gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(rec.stop),function(e2,s){
+        cnt++;out[i]={stopId:rec.stop,seq:rec.seq,nameTc:s&&s.data?s.data.name_tc:'站'+rec.stop,nameEn:s&&s.data?s.data.name_en:'Stop '+rec.stop}
+        if(!don&&cnt>=total){don=true;M.stops=out;renderStopList()}
+      })
+    })
+  })
+}
+
+function renderStopList(){
+  mst.innerHTML=''
+  filtered().forEach(function(s){
+    mst.appendChild(el('button',{cls:'stop-row'+(M.selectedStopId===s.stopId?' selected':''),ev:{click:function(){M.selectedStopId=s.stopId;renderStopList();mab.disabled=false}}},el('span',{cls:'stop-name'},s.nameTc)))
+  })
+}
+
+function filtered(){var q=Q('stop-filter').value.trim().toLowerCase();return M.stops.filter(function(s){return!q||(String(s.seq)+s.nameTc+s.nameEn).toLowerCase().indexOf(q)!==-1})}
+msf.addEventListener('input',function(){renderStopList()})
+
+// ---- add to tab ----
+mab.addEventListener('click',function(){
+  var t=at();if(!t||!M.selectedRoute||!M.selectedDir||!M.selectedStopId)return
+  var s=M.stops.find(function(x){return x.stopId===M.selectedStopId});if(!s)return
+  var nf={id:uid(),op:M.selectedRoute.op,on:M.selectedRoute.on,rt:M.selectedRoute.rt,sm:M.selectedRoute.sm,dir:M.selectedDir.direction,dl:M.selectedDir.label,stype:M.selectedDir.serviceType,sid:s.stopId,snt:s.nameTc,sne:s.nameEn}
+  if(t.favourites.some(function(x){return fk(x)===fk(nf)}))return
+  t.favourites.push(nf)
+  renderBoard()
+  refreshEtas()
+  saveAll()
+})
+
+// ---- bulk stop route add ----
+  var bulkStops=null,bulkRS=null,bulkRoutes=null,bulkBusy=false
+  var bulkStop=null
+
+  function loadBulkData(cb){
+    if(bulkRS&&bulkRoutes&&bulkStops){if(cb)cb();return}
+    if(bulkBusy){var id=setInterval(function(){if(bulkRS&&!bulkBusy){clearInterval(id);if(cb)cb()}},200);return}
+    bulkBusy=true
+    var c=0
+    function done(){c++;if(c<2)return;gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,r){if(!e&&r)bulkRoutes=r.data;bulkBusy=false;if(cb)cb()})}
+    gt('https://data.etabus.gov.hk/v1/transport/kmb/stop',function(e,r){if(!e&&r)bulkStops=r.data;done()})
+    gt('https://data.etabus.gov.hk/v1/transport/kmb/route-stop/',function(e,r){if(!e&&r)bulkRS=r.data;done()})
+  }
+
+  var bulkTimer=null
+  bs.addEventListener('input',function(){
+    clearTimeout(bulkTimer)
+    bulkTimer=setTimeout(function(){
+      var q=bs.value.trim().toLowerCase()
+      if(!q){brs.innerHTML='';bab.style.display='none';return}
+      loadBulkData(function(){
+        if(!bulkStops)return
+        brs.innerHTML=''
+        var hits=bulkStops.filter(function(s){return s.name_tc.indexOf(q)!==-1||s.name_en.toLowerCase().indexOf(q)!==-1}).slice(0,50)
+        hits.forEach(function(s){
+          brs.appendChild(el('button',{cls:'result-card'+(bulkStop&&bulkStop.stop===s.stop?' selected':''),ev:{click:function(){selectBulkStop(s)}}},el('strong',null,s.name_tc),el('span',null,s.name_en)))
+        })
+      })
+    },300)
+  })
+
+  function selectBulkStop(s){
+    bulkStop=s
+    bab.style.display=''
+  }
+
+  bab.addEventListener('click',function(){
+    var t=at();if(!t||!bulkStop)return
+    var stopId=bulkStop.stop
+    var matches=bulkRS.filter(function(r){return r.stop===stopId})
+    var added=0
+    matches.forEach(function(r){
+      var rtData=bulkRoutes?bulkRoutes.find(function(x){return x.route===r.route&&x.bound===r.bound&&x.service_type===r.service_type}):null
+      var sm=rtData?rtData.orig_tc+' -> '+rtData.dest_tc:r.route
+      var dl=sm
+      var nf={id:uid(),op:'kmb',on:'九巴/龍運',rt:r.route,sm:sm,dir:bt(r.bound),dl:dl,stype:r.service_type,sid:stopId,snt:bulkStop.name_tc,sne:bulkStop.name_en}
+      if(!t.favourites.some(function(x){return fk(x)===fk(nf)})){t.favourites.push(nf);added++}
+    })
+    if(added){renderBoard();refreshEtas();saveAll();bs.value='';brs.innerHTML='';bab.style.display='none';bulkStop=null}
+  })
+
+// ---- persistence ----
+ var _loaded=false
+ function loadAll(){
+   try{
+     var r=localStorage.getItem('hk-bus-v5')
+     if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;_loaded=true}}
+   }catch(e){}
+   if(!_loaded){
+     try{
+       var h=window.location.hash.slice(1)
+       if(h){var p=JSON.parse(decodeURIComponent(h));if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;try{localStorage.setItem('hk-bus-v5',h)}catch(e){};_loaded=true}}
+     }catch(e2){}
+   }
+   M._ready=true
+   renderBoard()
+   refreshEtas()
+ }
+
+ function saveAll(){
+   if(!M.tabs||!M.tabs.length)return
+   var data={tabs:M.tabs,activeTabId:M.activeTabId,collapsed:M.collapsed}
+   var s=JSON.stringify(data)
+   try{localStorage.setItem('hk-bus-v5',s)}catch(e){}
+   try{window.location.hash=encodeURIComponent(s)}catch(e){}
+ }
+
+function init(){loadAll();setInterval(refreshEtas,30000)}
+init()
+})()
+</script>
+</body>
+</html>
