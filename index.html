@@ -150,7 +150,7 @@ var mr=Q('result-list'),md=Q('dir-block'),mdr=Q('dir-list'),ms=Q('stop-block'),m
 var mtb=Q('tabs-bar'),mtn=Q('tab-name'),mfg=Q('favourite-grid'),mfp=Q('fastest-panel'),mfgg=Q('fastest-grid'),mrb=Q('rename-btn')
  var bs=Q('bulk-stop-search'),brs=Q('bulk-stop-results'),bab=Q('bulk-add-btn')
 
-function at(){var t=M.tabs.find(function(x){return x.id===M.activeTabId});if(!t&&M.tabs.length>0){t=M.tabs[0];M.activeTabId=t.id}return t}
+function at(){var t=M.tabs.find(function(x){return x.id===M.activeTabId});if(!t&&M.tabs.length>0){t=M.tabs[0];}return t}
 
 // ---- tabs ----
 function renderTabs(){
@@ -532,6 +532,8 @@ mab.addEventListener('click',function(){
      M.activeTabId = M.tabs[0].id
    }
    M._ready=true
+   console.log('加载完成后的分頁数据:', M.tabs)
+   console.log('加载完成后的 activeTabId:', M.activeTabId)
    renderBoard()
    refreshEtas()
  }
