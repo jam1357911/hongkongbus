@@ -176,11 +176,7 @@ function renderTabs(){
 
 mtn.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
-        var t = at();
-        if (t) {
-            t.name = mtn.value;
-            saveAll();
-        }
+        renameTab();
         mtn.blur();
     } else if (e.key === 'Escape') {
         mtn.value = at().name;
@@ -189,16 +185,29 @@ mtn.addEventListener('keydown', function(e) {
 });
 
 mtn.addEventListener('blur', function() {
-    // blur 時不做任何事，避免干擾按鈕點擊
+    var t = at();
+    if (t) {
+        mtn.value = t.name;
+    }
 });
 
-mrb.addEventListener('click', function() {
+function renameTab() {
     var t = at();
     if (t) {
         t.name = mtn.value;
         saveAll();
-        renderBoard();
+        renderTabs();
     }
+}
+
+mrb.addEventListener('mousedown', function(e) {
+    renameTab();
+    e.preventDefault();
+});
+
+mrb.addEventListener('touchstart', function(e) {
+    renameTab();
+    e.preventDefault();
 });
 
 function renderBoard(){
