@@ -159,7 +159,19 @@ function renderTabs(){
     l.appendChild(el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),ev:{click:function(){M.activeTabId=t.id;renderBoard()}}},t.name))
   })
   var a=el('div',{cls:'tab-actions'})
-  a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){var t2=defTab(M.tabs.length+1);M.tabs.push(t2);M.activeTabId=t2.id;renderBoard()}}},'新增分頁'))
+  a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){
+    // 首先确保当前分頁的名称已保存
+    var currentTab = at();
+    if (currentTab) {
+      currentTab.name = mtn.value;
+      saveAll();
+    }
+    // 然后新增分頁
+    var t2 = defTab(M.tabs.length + 1);
+    M.tabs.push(t2);
+    M.activeTabId = t2.id;
+    renderBoard();
+  }}},'新增分頁'))
   a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){if(M.tabs.length<2)return;M.tabs=M.tabs.filter(function(x){return x.id!==M.activeTabId});M.activeTabId=M.tabs[0]?M.tabs[0].id:'';renderBoard()}}},'刪除分頁'))
   mtb.appendChild(l);mtb.appendChild(a)
 }
@@ -172,7 +184,7 @@ function renderBoard(){
   mtn.value=t.name
   renderFavourites()
   renderFastest()
-  if(M._ready&&M.tabs.length&&M.tabs.some(function(t){return t.favourites.length}))saveAll()
+  // 移除自动保存逻辑，避免页面加载时覆盖数据
 }
 
 // ---- favourites ----
