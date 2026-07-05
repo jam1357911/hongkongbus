@@ -164,12 +164,13 @@ function renderTabs(){
     var currentTab = at();
     if (currentTab) {
       currentTab.name = mtn.value;
-      saveAll();
     }
     // 然后新增分頁
     var t2 = defTab(M.tabs.length + 1);
     M.tabs.push(t2);
     M.activeTabId = t2.id;
+    // 最后保存所有修改
+    saveAll();
     renderBoard();
   }}},'新增分頁'))
   a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){if(M.tabs.length<2)return;M.tabs=M.tabs.filter(function(x){return x.id!==M.activeTabId});M.activeTabId=M.tabs[0]?M.tabs[0].id:'';renderBoard()}}},'刪除分頁'))
