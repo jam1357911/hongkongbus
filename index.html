@@ -173,14 +173,15 @@ function renderTabs(){
   mtb.appendChild(l);mtb.appendChild(a)
 }
 
-mtn.addEventListener('input', function() {
-    // 不在 input 事件中修改分頁名称，只保存到 localStorage
-    // 分頁名称只在 blur 或按 Enter 时才真正保存到分頁对象
+var _editingTabId=''
+
+mtn.addEventListener('focus', function() {
+    _editingTabId = M.activeTabId
 });
 
 mtn.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
-        var t = at();
+        var t = M.tabs.find(function(x){return x.id===_editingTabId});
         if (t) {
             t.name = mtn.value;
             saveAll();
@@ -190,11 +191,12 @@ mtn.addEventListener('keydown', function(e) {
 });
 
 mtn.addEventListener('blur', function() {
-    var t = at();
+    var t = M.tabs.find(function(x){return x.id===_editingTabId});
     if (t) {
         t.name = mtn.value;
         saveAll();
     }
+    _editingTabId = ''
 });
 
 function renderBoard(){
