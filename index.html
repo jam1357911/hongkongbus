@@ -189,10 +189,7 @@ mtn.addEventListener('keydown', function(e) {
 });
 
 mtn.addEventListener('blur', function() {
-    var t = at();
-    if (t) {
-        mtn.value = t.name;
-    }
+    // blur 時不做任何事，避免干擾按鈕點擊
 });
 
 mrb.addEventListener('click', function() {
