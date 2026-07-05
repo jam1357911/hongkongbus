@@ -163,13 +163,16 @@ function renderTabs(){
     // 首先确保当前分頁的名称已保存
     var currentTab = at();
     if (currentTab) {
+      // 立即保存当前分頁的名称，不依赖定时器
       currentTab.name = mtn.value;
     }
+    
     // 然后新增分頁
     var t2 = defTab(M.tabs.length + 1);
     M.tabs.push(t2);
     M.activeTabId = t2.id;
-    // 最后保存所有修改
+    
+    // 立即保存所有修改
     saveAll();
     renderBoard();
   }}},'新增分頁'))
@@ -177,7 +180,26 @@ function renderTabs(){
   mtb.appendChild(l);mtb.appendChild(a)
 }
 
-mtn.addEventListener('input',function(){var t=at();if(t){t.name=mtn.value;saveAll()}})
+mtn.addEventListener('input', function() {
+    var t = at();
+    if (t) {
+        t.name = mtn.value;
+        // 延迟保存以避免频繁的存储操作
+        clearTimeout(mtn._saveTimeout);
+        mtn._saveTimeout = setTimeout(function() {
+            saveAll();
+        }, 300);
+    }
+});
+
+// 添加失去焦点事件监听器，确保分頁名在输入完成后立即保存
+mtn.addEventListener('blur', function() {
+    var t = at();
+    if (t) {
+        t.name = mtn.value;
+        saveAll();
+    }
+});
 
 function renderBoard(){
   renderTabs()
