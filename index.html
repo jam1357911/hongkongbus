@@ -157,7 +157,7 @@ function renderTabs(){
   mtb.innerHTML=''
   var l=el('div',{cls:'tab-list'})
   M.tabs.forEach(function(t){
-    l.appendChild(el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),ev:{click:function(){M.activeTabId=t.id;renderBoard()}}},t.name))
+    l.appendChild(el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),ev:{click:function(){M.activeTabId=t.id;saveAll();renderBoard()}}},t.name))
   })
   var a=el('div',{cls:'tab-actions'})
   a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){
@@ -170,7 +170,7 @@ function renderTabs(){
     saveAll();
     renderBoard();
   }}},'新增分頁'))
-  a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){if(M.tabs.length<2)return;M.tabs=M.tabs.filter(function(x){return x.id!==M.activeTabId});M.activeTabId=M.tabs[0]?M.tabs[0].id:'';renderBoard()}}},'刪除分頁'))
+  a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){if(M.tabs.length<2)return;M.tabs=M.tabs.filter(function(x){return x.id!==M.activeTabId});M.activeTabId=M.tabs[0]?M.tabs[0].id:'';saveAll();renderBoard()}}},'刪除分頁'))
   mtb.appendChild(l);mtb.appendChild(a)
 }
 
@@ -509,37 +509,25 @@ mab.addEventListener('click',function(){
 // ---- persistence ----
  var _loaded=false
  function loadAll(){
-   // 只从 localStorage 加载分頁数据，避免 URL 哈希数据的干扰
    try{
      var r=localStorage.getItem('hk-bus-v5')
      if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;_loaded=true}}
    }catch(e){}
-   
-   // 如果 localStorage 中没有分頁数据，且 URL 哈希中有，再从 URL 哈希加载
    if(!_loaded){
      try{
        var h=window.location.hash.slice(1)
        if(h){var p=JSON.parse(decodeURIComponent(h));if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;try{localStorage.setItem('hk-bus-v5',h)}catch(e){};_loaded=true}}
      }catch(e2){}
    }
-   
-   // 如果没有加载到任何分頁数据，创建默认分頁
    if(!_loaded){
      var defaultTab=defTab(1)
      M.tabs=[defaultTab]
      M.activeTabId=defaultTab.id
      _loaded=true
    }
-   
-   // 确保 activeTabId 对应的分頁存在，否则使用第一个分頁
-   var activeTab = M.tabs.find(function(x){return x.id===M.activeTabId})
-   if(!activeTab && M.tabs.length>0){
-     M.activeTabId = M.tabs[0].id
-   }
-   
+   var activeTab=M.tabs.find(function(x){return x.id===M.activeTabId})
+   if(!activeTab&&M.tabs.length>0)M.activeTabId=M.tabs[0].id
    M._ready=true
-   console.log('加载完成后的分頁数据:', M.tabs)
-   console.log('加载完成后的 activeTabId:', M.activeTabId)
    renderBoard()
    refreshEtas()
  }
@@ -549,7 +537,6 @@ mab.addEventListener('click',function(){
    var data={tabs:M.tabs,activeTabId:M.activeTabId,collapsed:M.collapsed}
    var s=JSON.stringify(data)
    try{localStorage.setItem('hk-bus-v5',s)}catch(e){}
-   // 避免保存分頁数据到 URL 哈希中，防止页面刷新时加载错误的 activeTabId
  }
 
 function init(){loadAll();setInterval(refreshEtas,30000)}
