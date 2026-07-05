@@ -160,14 +160,7 @@ function renderTabs(){
   })
   var a=el('div',{cls:'tab-actions'})
   a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){
-    // 首先确保当前分頁的名称已保存
-    var currentTab = at();
-    if (currentTab) {
-      // 立即保存当前分頁的名称，不依赖定时器
-      currentTab.name = mtn.value;
-    }
-    
-    // 然后新增分頁
+    // 新增分頁时，不修改当前分頁的名称
     var t2 = defTab(M.tabs.length + 1);
     M.tabs.push(t2);
     M.activeTabId = t2.id;
