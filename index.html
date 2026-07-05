@@ -173,30 +173,25 @@ function renderTabs(){
   mtb.appendChild(l);mtb.appendChild(a)
 }
 
-var _editingTabId=''
-
-mtn.addEventListener('focus', function() {
-    _editingTabId = M.activeTabId
-});
-
 mtn.addEventListener('keydown', function(e) {
     if (e.key === 'Enter') {
-        var t = M.tabs.find(function(x){return x.id===_editingTabId});
+        var t = at();
         if (t) {
             t.name = mtn.value;
             saveAll();
         }
         mtn.blur();
+    } else if (e.key === 'Escape') {
+        mtn.value = at().name;
+        mtn.blur();
     }
 });
 
 mtn.addEventListener('blur', function() {
-    var t = M.tabs.find(function(x){return x.id===_editingTabId});
+    var t = at();
     if (t) {
-        t.name = mtn.value;
-        saveAll();
+        mtn.value = t.name;
     }
-    _editingTabId = ''
 });
 
 function renderBoard(){
