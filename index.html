@@ -270,12 +270,23 @@ function renderHourlyWeather(data,mhw){
     var hour=i%24
     var timeStr=(hour<10?'0':'')+hour+':00'
     
+    // 转换PSR（显著降雨概率）为百分比数值
+    var psrText=''
+    switch(todayForecast.PSR){
+      case '高': psrText='≥70%降雨'; break;
+      case '中高': psrText='55-69%降雨'; break;
+      case '中': psrText='45-54%降雨'; break;
+      case '中低': psrText='30-44%降雨'; break;
+      case '低': psrText='<30%降雨'; break;
+      default: psrText='--%降雨'; break;
+    }
+    
     // 显示今天的天气信息
     var item=el('div',{cls:'hourly-item',style:i>=currentHour+8?'display:none':''},
       el('div',{cls:'hourly-time'},timeStr),
       el('div',{cls:'hourly-icon'},getWeatherIcon(todayForecast.forecastWeather)),
       el('div',{cls:'hourly-temp'},todayForecast.forecastMaxtemp.value+'°'),
-      el('div',{cls:'hourly-rain'},'--%降雨')
+      el('div',{cls:'hourly-rain'},psrText)
     )
     grid.appendChild(item)
   }
@@ -296,14 +307,14 @@ function renderDailyWeather(data,mdw){
     var month=parseInt(d.forecastDate.substring(4,6))-1 // 月份从0开始
     var day=parseInt(d.forecastDate.substring(6,8))
     var dateStr=new Date(year,month,day).toLocaleDateString('zh-HK',{month:'short',day:'numeric',weekday:'short'})
-    // 转换PSR（显著降雨概率）为可读格式
+    // 转换PSR（显著降雨概率）为百分比数值
     var psrText=''
     switch(d.PSR){
-      case '高': psrText='高降雨機率'; break;
-      case '中高': psrText='中高降雨機率'; break;
-      case '中': psrText='中降雨機率'; break;
-      case '中低': psrText='中低降雨機率'; break;
-      case '低': psrText='低降雨機率'; break;
+      case '高': psrText='≥70%降雨'; break;
+      case '中高': psrText='55-69%降雨'; break;
+      case '中': psrText='45-54%降雨'; break;
+      case '中低': psrText='30-44%降雨'; break;
+      case '低': psrText='<30%降雨'; break;
       default: psrText='--%降雨'; break;
     }
     
