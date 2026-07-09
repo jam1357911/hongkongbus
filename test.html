@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>分頁功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 8px 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+        .tab-content {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 4px;
+        }
+        .control-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+        }
+        .control-panel input {
+            padding: 5px;
+            margin: 5px;
+            width: 200px;
+        }
+        .control-panel button {
+            padding: 8px 16px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e7f3fe;
+            border: 1px solid #b3d9ff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>分頁功能测试</h1>
+        
+        <div class="tabs" id="tabs-container"></div>
+        
+        <div class="tab-content" id="tab-content">
+            <h3>分頁内容</h3>
+            <p>当前分頁 ID: <span id="current-tab-id"></span></p>
+        </div>
+        
+        <div class="control-panel">
+            <h3>分頁管理</h3>
+            <input type="text" id="tab-name-input" placeholder="分頁名称" style="width: 150px;">
+            <button id="update-name-btn">更新分頁名</button>
+            <button id="add-tab-btn">新增分頁</button>
+            <button id="remove-tab-btn">删除分頁</button>
+            <br><br>
+            <button id="save-btn">保存状态</button>
+            <button id="load-btn">加载状态</button>
+            <button id="clear-btn">清空数据</button>
+        </div>
+        
+        <div id="status"></div>
+    </div>
+    
+    <script>
+        // 测试分頁数据结构
+        var M = {
+            tabs: [
+                { id: 'tab-1', name: '分頁 1', favourites: [] },
+                { id: 'tab-2', name: '分頁 2', favourites: [] }
+            ],
+            activeTabId: 'tab-1',
+            collapsed: {},
+            selectedRoute: null,
+            selectedDir: null,
+            stops: [],
+            selectedStopId: '',
+            etaMap: {}
+        };
+        
+        // 模拟实际代码中的函数
+        function el(t, c) {
+            var e = document.createElement(t);
+            if (c) for (var k in c) {
+                var v = c[k];
+                if (k === 'cls') e.className = v;
+                else if (k === 'ev') for (var en in v) e.addEventListener(en, v[en]);
+                else e[k] = v;
+            }
+            for (var i = 2; i < arguments.length; i++) {
+                var ch = arguments[i];
+                if (typeof ch === 'string' || typeof ch === 'number') e.textContent = ch;
+                else if (ch && ch.nodeType) e.appendChild(ch);
+                else if (ch && ch.length) for (var j = 0; j < ch.length; j++) e.appendChild(ch[j]);
+            }
+            return e;
+        }
+        
+        function uid() { return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8); }
+        function defTab(i) { return { id: uid(), name: '分頁 ' + i, favourites: [] }; }
+        function at() { var t = M.tabs.find(function(x) { return x.id === M.activeTabId; }); return t || M.tabs[0]; }
+        
+        // 模拟 renderBoard 函数
+        function renderBoard() {
+            renderTabs();
+            var t = at();
+            if (!t) return;
+            document.getElementById('tab-name-input').value = t.name;
+            document.getElementById('current-tab-id').textContent = t.id;
+        }
+        
+        function renderTabs() {
+            var container = document.getElementById('tabs-container');
+            container.innerHTML = '';
+            M.tabs.forEach(function(t) {
+                var btn = el('button', {
+                    type: 'button',
+                    cls: 'tab-button' + (t.id === M.activeTabId ? ' active' : ''),
+                    ev: {
+                        click: function() {
+                            M.activeTabId = t.id;
+                            renderBoard();
+                            updateStatus('切换到分頁: ' + t.name);
+                        }
+                    }
+                }, t.name);
+                container.appendChild(btn);
+            });
+        }
+        
+        // 模拟 saveAll 函数
+        function saveAll() {
+            var data = {
+                tabs: M.tabs,
+                activeTabId: M.activeTabId,
+                collapsed: M.collapsed
+            };
+            var s = JSON.stringify(data);
+            localStorage.setItem('hk-bus-v5', s);
+            updateStatus('数据已保存');
+        }
+        
+        // 模拟 loadAll 函数
+        function loadAll() {
+            try {
+                var r = localStorage.getItem('hk-bus-v5');
+                if (r) {
+                    var p = JSON.parse(r);
+                    if (p && p.tabs && p.tabs.length) {
+                        M.tabs = p.tabs;
+                        M.activeTabId = p.activeTabId;
+                        if (p.collapsed) M.collapsed = p.collapsed;
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
+            renderBoard();
+            updateStatus('数据已加载');
+        }
+        
+        // 更新状态显示
+        function updateStatus(msg) {
+            document.getElementById('status').textContent = msg;
+            document.getElementById('status').style.display = 'block';
+            setTimeout(function() {
+                document.getElementById('status').style.display = 'none';
+            }, 3000);
+        }
+        
+        // 事件绑定
+        document.getElementById('add-tab-btn').addEventListener('click', function() {
+            var currentTab = at();
+            if (currentTab) {
+                currentTab.name = document.getElementById('tab-name-input').value;
+                saveAll();
+            }
+            
+            var t2 = defTab(M.tabs.length + 1);
+            M.tabs.push(t2);
+            M.activeTabId = t2.id;
+            renderBoard();
+        });
+        
+        document.getElementById('remove-tab-btn').addEventListener('click', function() {
+            if (M.tabs.length < 2) {
+                updateStatus('不能删除最后一个分頁');
+                return;
+            }
+            
+            M.tabs = M.tabs.filter(function(x) { return x.id !== M.activeTabId; });
+            M.activeTabId = M.tabs[0].id;
+            renderBoard();
+            saveAll();
+        });
+        
+        document.getElementById('update-name-btn').addEventListener('click', function() {
+            var currentTab = at();
+            if (currentTab) {
+                currentTab.name = document.getElementById('tab-name-input').value;
+                renderBoard();
+                saveAll();
+            }
+        });
+        
+        document.getElementById('save-btn').addEventListener('click', saveAll);
+        document.getElementById('load-btn').addEventListener('click', loadAll);
+        document.getElementById('clear-btn').addEventListener('click', function() {
+            localStorage.removeItem('hk-bus-v5');
+            M.tabs = [
+                { id: 'tab-1', name: '分頁 1', favourites: [] },
+                { id: 'tab-2', name: '分頁 2', favourites: [] }
+            ];
+            M.activeTabId = 'tab-1';
+            renderBoard();
+            updateStatus('数据已清空');
+        });
+        
+        // 初始化
+        renderBoard();
+        
+        // 显示当前状态
+        console.log('当前分頁:', M.tabs);
+    </script>
+</body>
+</html>

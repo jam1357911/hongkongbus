@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>存储机制测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        .section h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .test-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            background-color: #f5f5f5;
+        }
+        .result.success {
+            background-color: #e7f3fe;
+            border: 1px solid #b3d9ff;
+            color: #0066cc;
+        }
+        .result.error {
+            background-color: #fadbd8;
+            border: 1px solid #f5b7b1;
+            color: #b03060;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>存储机制测试</h1>
+        
+        <div class="section">
+            <h2>1. 模拟分頁数据</h2>
+            <div class="controls">
+                <button class="test-button" onclick="initTestData()">初始化测试数据</button>
+                <button class="test-button" onclick="updateTabName('分頁 1', '我的首頁')">修改分頁 1 名称</button>
+                <button class="test-button" onclick="updateTabName('分頁 2', '工作路線')">修改分頁 2 名称</button>
+            </div>
+            <div class="result" id="test-data-result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. 测试存储函数</h2>
+            <div class="controls">
+                <button class="test-button" onclick="testSaveAll()">测试 saveAll()</button>
+                <button class="test-button" onclick="testLoadAll()">测试 loadAll()</button>
+                <button class="test-button" onclick="clearAllData()">清空所有数据</button>
+            </div>
+            <div class="result" id="storage-result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. 模拟新增分頁场景</h2>
+            <div class="controls">
+                <button class="test-button" onclick="simulateAddTab()">模拟新增分頁操作</button>
+            </div>
+            <div class="result" id="add-tab-result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>4. 查看实际存储内容</h2>
+            <div class="controls">
+                <button class="test-button" onclick="showLocalStorage()">显示 LocalStorage</button>
+                <button class="test-button" onclick="showHashStorage()">显示 URL Hash</button>
+            </div>
+            <div class="result" id="storage-content"></div>
+        </div>
+    </div>
+    
+    <script>
+        // 模拟实际项目的存储机制
+        var M = {
+            tabs: [
+                { id: 'tab-1', name: '分頁 1', favourites: [] },
+                { id: 'tab-2', name: '分頁 2', favourites: [] }
+            ],
+            activeTabId: 'tab-1',
+            collapsed: {},
+            _ready: false
+        };
+        
+        function uid() { return 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8); }
+        function defTab(i) { return { id: uid(), name: '分頁 ' + i, favourites: [] }; }
+        function at() { 
+            var t = M.tabs.find(function(x) { return x.id === M.activeTabId; }); 
+            return t || M.tabs[0]; 
+        }
+        
+        // 模拟 saveAll 函数
+        function saveAll() {
+            var result = '';
+            try {
+                if (!M.tabs || !M.tabs.length) {
+                    result += '无分頁数据可保存\n';
+                    return false;
+                }
+                
+                var data = {
+                    tabs: M.tabs,
+                    activeTabId: M.activeTabId,
+                    collapsed: M.collapsed
+                };
+                
+                var s = JSON.stringify(data);
+                localStorage.setItem('hk-bus-v5', s);
+                result += 'LocalStorage 保存成功: ' + s + '\n';
+                
+                window.location.hash = encodeURIComponent(s);
+                result += 'URL Hash 保存成功: ' + window.location.hash + '\n';
+                
+                return true;
+            } catch (e) {
+                result += '保存失败: ' + e.message + '\n';
+                return false;
+            }
+        }
+        
+        // 模拟 loadAll 函数
+        function loadAll() {
+            var result = '';
+            var _loaded = false;
+            
+            try {
+                var r = localStorage.getItem('hk-bus-v5');
+                if (r) {
+                    var p = JSON.parse(r);
+                    if (p && p.tabs && p.tabs.length) {
+                        M.tabs = p.tabs;
+                        M.activeTabId = p.activeTabId;
+                        if (p.collapsed) M.collapsed = p.collapsed;
+                        _loaded = true;
+                        result += '从 LocalStorage 加载数据成功\n';
+                        result += '分頁数量: ' + M.tabs.length + '\n';
+                        result += '当前激活分頁: ' + M.activeTabId + '\n';
+                        result += '分頁名称: ' + JSON.stringify(M.tabs.map(function(t){return t.name;})) + '\n';
+                    }
+                }
+            } catch (e) {
+                result += 'LocalStorage 加载失败: ' + e.message + '\n';
+            }
+            
+            if (!_loaded) {
+                try {
+                    var h = window.location.hash.slice(1);
+                    if (h) {
+                        var p = JSON.parse(decodeURIComponent(h));
+                        if (p && p.tabs && p.tabs.length) {
+                            M.tabs = p.tabs;
+                            M.activeTabId = p.activeTabId;
+                            if (p.collapsed) M.collapsed = p.collapsed;
+                            try {
+                                localStorage.setItem('hk-bus-v5', h);
+                            } catch (e) {}
+                            _loaded = true;
+                            result += '从 URL Hash 加载数据成功\n';
+                            result += '分頁数量: ' + M.tabs.length + '\n';
+                            result += '当前激活分頁: ' + M.activeTabId + '\n';
+                            result += '分頁名称: ' + JSON.stringify(M.tabs.map(function(t){return t.name;})) + '\n';
+                        }
+                    }
+                } catch (e2) {
+                    result += 'URL Hash 加载失败: ' + e2.message + '\n';
+                }
+            }
+            
+            M._ready = true;
+            return result;
+        }
+        
+        // 辅助函数
+        function initTestData() {
+            M.tabs = [
+                { id: 'tab-1', name: '分頁 1', favourites: [] },
+                { id: 'tab-2', name: '分頁 2', favourites: [] }
+            ];
+            M.activeTabId = 'tab-1';
+            M.collapsed = {};
+            M._ready = false;
+            
+            document.getElementById('test-data-result').textContent = '测试数据已初始化:\n' + JSON.stringify(M, null, 2);
+            document.getElementById('test-data-result').className = 'result success';
+        }
+        
+        function updateTabName(oldName, newName) {
+            var tab = M.tabs.find(function(t) { return t.name === oldName; });
+            if (tab) {
+                tab.name = newName;
+                document.getElementById('test-data-result').textContent = '分頁名称已更新:\n' + JSON.stringify(M, null, 2);
+                document.getElementById('test-data-result').className = 'result success';
+            } else {
+                document.getElementById('test-data-result').textContent = '未找到分頁: ' + oldName;
+                document.getElementById('test-data-result').className = 'result error';
+            }
+        }
+        
+        function testSaveAll() {
+            var success = saveAll();
+            var resultDiv = document.getElementById('storage-result');
+            
+            if (success) {
+                resultDiv.textContent = 'saveAll() 测试成功:\n';
+                resultDiv.textContent += 'LocalStorage: ' + localStorage.getItem('hk-bus-v5') + '\n';
+                resultDiv.textContent += 'URL Hash: ' + window.location.hash;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = 'saveAll() 测试失败';
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        function testLoadAll() {
+            var result = loadAll();
+            var resultDiv = document.getElementById('storage-result');
+            
+            if (M.tabs.length > 0) {
+                resultDiv.textContent = 'loadAll() 测试成功:\n' + result;
+                resultDiv.className = 'result success';
+            } else {
+                resultDiv.textContent = 'loadAll() 测试失败:\n' + result;
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        function clearAllData() {
+            localStorage.removeItem('hk-bus-v5');
+            window.location.hash = '';
+            M.tabs = [];
+            M.activeTabId = '';
+            M.collapsed = {};
+            M._ready = false;
+            
+            document.getElementById('storage-result').textContent = '所有数据已清空';
+            document.getElementById('storage-result').className = 'result success';
+            document.getElementById('storage-content').textContent = '';
+        }
+        
+        function simulateAddTab() {
+            var result = [];
+            
+            result.push('1. 当前分頁状态:');
+            result.push('当前激活分頁: ' + M.activeTabId);
+            result.push('分頁名称: ' + JSON.stringify(M.tabs));
+            
+            var currentTab = at();
+            if (currentTab) {
+                result.push('2. 修改当前分頁名称为: "自定义分頁"');
+                currentTab.name = '自定义分頁';
+            }
+            
+            result.push('3. 保存状态');
+            var saved = saveAll();
+            
+            if (saved) {
+                result.push('4. 新增分頁');
+                var t2 = defTab(M.tabs.length + 1);
+                M.tabs.push(t2);
+                M.activeTabId = t2.id;
+                
+                result.push('5. 再次保存状态');
+                var savedAgain = saveAll();
+                
+                if (savedAgain) {
+                    result.push('6. 最终状态');
+                    result.push('分頁列表:');
+                    M.tabs.forEach(function(t, idx) {
+                        result.push('  [' + idx + '] ' + t.name + ' (ID: ' + t.id + ')' + (t.id === M.activeTabId ? ' [激活]' : ''));
+                    });
+                    
+                    document.getElementById('add-tab-result').textContent = result.join('\n');
+                    document.getElementById('add-tab-result').className = 'result success';
+                } else {
+                    document.getElementById('add-tab-result').textContent = '保存失败';
+                    document.getElementById('add-tab-result').className = 'result error';
+                }
+            } else {
+                document.getElementById('add-tab-result').textContent = '保存失败';
+                document.getElementById('add-tab-result').className = 'result error';
+            }
+        }
+        
+        function showLocalStorage() {
+            var value = localStorage.getItem('hk-bus-v5');
+            var resultDiv = document.getElementById('storage-content');
+            
+            if (value) {
+                try {
+                    var parsed = JSON.parse(value);
+                    resultDiv.textContent = 'LocalStorage (hk-bus-v5):\n' + JSON.stringify(parsed, null, 2);
+                    resultDiv.className = 'result success';
+                } catch (e) {
+                    resultDiv.textContent = 'LocalStorage (hk-bus-v5): 无效 JSON - ' + value;
+                    resultDiv.className = 'result error';
+                }
+            } else {
+                resultDiv.textContent = 'LocalStorage 中没有找到 hk-bus-v5 数据';
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        function showHashStorage() {
+            var hash = window.location.hash.slice(1);
+            var resultDiv = document.getElementById('storage-content');
+            
+            if (hash) {
+                try {
+                    var decoded = decodeURIComponent(hash);
+                    var parsed = JSON.parse(decoded);
+                    resultDiv.textContent = 'URL Hash:\n' + JSON.stringify(parsed, null, 2);
+                    resultDiv.className = 'result success';
+                } catch (e) {
+                    resultDiv.textContent = 'URL Hash: 无效数据 - ' + hash;
+                    resultDiv.className = 'result error';
+                }
+            } else {
+                resultDiv.textContent = 'URL Hash 为空';
+                resultDiv.className = 'result error';
+            }
+        }
+        
+        // 初始化
+        window.addEventListener('load', function() {
+            initTestData();
+        });
+    </script>
+</body>
+</html>
