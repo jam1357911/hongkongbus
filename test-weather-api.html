@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试香港天文台天气API</title>
+</head>
+<body>
+    <h1>测试香港天文台天气API</h1>
+    <button onclick="testWeatherAPI()">获取天气数据</button>
+    <pre id="weather-data"></pre>
+
+    <script>
+        function testWeatherAPI() {
+            const url = 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=fnd&lang=tc';
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    console.log('API返回的完整数据：', data);
+                    document.getElementById('weather-data').textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(error => {
+                    console.error('获取天气数据失败：', error);
+                    document.getElementById('weather-data').textContent = '获取天气数据失败：' + error.message;
+                });
+        }
+    </script>
+</body>
+</html>

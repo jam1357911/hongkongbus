@@ -77,11 +77,43 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 .primary-button{width:100%;background:linear-gradient(135deg,var(--accent),#4f46e5);color:#fff;border:none;padding:12px 18px;border-radius:14px;cursor:pointer;font:inherit;font-size:15px;font-weight:700}
 .primary-button:hover{opacity:.92}
 .primary-button:disabled{opacity:.5;cursor:not-allowed}
-@media(min-width:768px){.fastest-grid{grid-template-columns:repeat(3,1fr)}}
+/* 天气组件样式 */
+.weather-panel{background:var(--panel-bg);border:1px solid var(--border);border-radius:24px;padding:20px;box-shadow:var(--shadow);order:3;max-width:100%;box-sizing:border-box}
+.weather-header{margin-bottom:16px}
+.weather-title{font-size:18px;color:var(--text-h);margin-bottom:4px}
+.weather-subtitle{font-size:14px;color:var(--text)}
+.weather-grid{display:grid;gap:12px;max-width:100%;box-sizing:border-box}
+/* 24小时天气 */
+.hourly-weather{display:grid;grid-template-columns:repeat(auto-fit, minmax(60px, 1fr));gap:4px;max-width:100%;box-sizing:border-box}
+.hourly-item{background:var(--card-muted);border:1px solid var(--border);border-radius:12px;padding:6px;text-align:center;box-sizing:border-box}
+.hourly-time{font-size:11px;color:var(--text-h);font-weight:600;margin-bottom:2px}
+.hourly-temp{font-size:13px;color:var(--text-h);font-weight:700;margin-bottom:2px}
+.hourly-icon{font-size:18px;margin-bottom:2px}
+.hourly-rain{font-size:9px;color:var(--text)}
+/* 5天天气 */
+.daily-weather{display:grid;gap:8px}
+.daily-item{background:var(--card-muted);border:1px solid var(--border);border-radius:14px;padding:12px;display:grid;grid-template-columns:1fr auto auto auto;gap:12px;align-items:center}
+.daily-date{font-size:14px;color:var(--text-h);font-weight:600}
+.daily-icon{font-size:28px}
+.daily-temp{font-size:16px;color:var(--text-h);font-weight:700}
+.daily-rain{font-size:14px;color:var(--text)}
+@media(min-width:768px){
+  .fastest-grid{grid-template-columns:repeat(3,1fr)}
+  .hourly-weather{grid-template-columns:repeat(auto-fit, minmax(80px, 1fr))}
+  .hourly-time{font-size:12px}
+  .hourly-temp{font-size:14px}
+  .hourly-icon{font-size:20px}
+  .hourly-rain{font-size:10px}
+  .daily-item{grid-template-columns:1fr auto auto auto}
+}
 </style>
 </head>
 <body>
 <div id="root">
+  <div class="app-title">
+  <h1>香港巴士實時到站時間</h1>
+  <p class="subtitle">獲取九巴、城巴的實時到站數據</p>
+</div>
 <div class="board-panel" id="board">
 <div class="tabs-bar" id="tabs-bar"></div>
 <div class="tab-meta">
@@ -112,7 +144,20 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 </div>
 <button type="button" class="primary-button" id="add-btn" disabled>加入目前分頁</button>
 </div>
+<div class="weather-panel" id="weather-panel">
+<div class="weather-header">
+  <h2 class="weather-title">天氣預報</h2>
+  <p class="weather-subtitle">香港天文台數據</p>
 </div>
+<div class="weather-grid">
+  <div id="hourly-weather"></div>
+  <div id="daily-weather"></div>
+  <div style="margin-top: 10px;">
+    <button type="button" class="primary-button" id="load-weather-btn" style="margin-top: 10px;">重新載入天氣數據</button>
+  </div>
+</div>
+</div>
+
 <script>
 (function(){
 var M={tabs:[],activeTabId:'',collapsed:{},selectedRoute:null,selectedDir:null,stops:[],selectedStopId:'',etaMap:{}}
@@ -149,6 +194,174 @@ var Q=document.getElementById.bind(document)
 var mr=Q('result-list'),md=Q('dir-block'),mdr=Q('dir-list'),ms=Q('stop-block'),mst=Q('stop-list'),mab=Q('add-btn'),msf=Q('stop-filter')
 var mtb=Q('tabs-bar'),mtn=Q('tab-name'),mfg=Q('favourite-grid'),mfp=Q('fastest-panel'),mfgg=Q('fastest-grid'),mrb=Q('rename-btn')
  var bs=Q('bulk-stop-search'),brs=Q('bulk-stop-results'),bab=Q('bulk-add-btn')
+
+// 天气数据获取函数
+function getWeatherData(cb){
+  // 使用香港天文台的天气API
+  var url='https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=fnd&lang=tc'
+  console.log('開始獲取天氣數據:', url)
+  fetch(url,{headers:{accept:'application/json'}})
+    .then(function(r){
+      console.log('响应状态:', r.status, r.statusText)
+      if(!r.ok)throw Error('ERR'+r.status+' - '+r.statusText)
+      return r.json()
+    })
+    .then(function(d){
+      console.log('獲取天氣數據成功:', d)
+      cb(null,d)
+    })
+    .catch(function(e){
+      console.error('獲取天氣數據失敗:', e)
+      cb(e,null)
+    })
+}
+
+// 天气图标映射
+function getWeatherIcon(wx){
+  var icons={
+    '晴朗':'☀️','多云':'☁️','有云':'⛅','阴天':'☁️','有雨':'🌧️','雷暴':'⛈️','雨':'🌧️','毛毛雨':'🌦️','骤雨':'🌧️','雷雨':'⛈️','雪':'❄️'
+  }
+  for(var key in icons){
+    if(wx.indexOf(key)!==-1)return icons[key]
+  }
+  return '🌤️'
+}
+
+// 渲染24小时天气（API不提供逐小时数据，显示今天的详细天气）
+function renderHourlyWeather(data,mhw){
+  console.log('=== renderHourlyWeather 被调用 ===')
+  console.log('传入的数据:', data)
+  console.log('传入的 mhw:', mhw)
+  
+  if(!data||!data.weatherForecast||data.weatherForecast.length===0||!mhw){
+    console.log('条件不满足，返回')
+    return
+  }
+  
+  var todayForecast=data.weatherForecast[0]
+  mhw.innerHTML=''
+  
+  // 创建控制按钮
+  var toggleBtn=el('button',{
+    type:'button',
+    cls:'secondary-button',
+    style:'margin-bottom:8px;font-size:12px;padding:6px 10px',
+    ev:{
+      click:function(){
+        // 切换显示/隐藏状态
+        var items=document.querySelectorAll('#hourly-weather .hourly-item')
+        items.forEach(function(item,index){
+          if(index>=8){
+            item.style.display=item.style.display==='none'?'block':'none'
+          }
+        })
+        // 更改按钮文字
+        this.textContent=this.textContent==='顯示更多'?'收起':'顯示更多'
+      }
+    }
+  },'顯示更多')
+  
+  var grid=el('div',{cls:'hourly-weather'})
+  
+  // 创建24个小时时间段
+  var now=new Date()
+  var currentHour=now.getHours()
+  for(var i=currentHour;i<currentHour+24;i++){
+    var hour=i%24
+    var timeStr=(hour<10?'0':'')+hour+':00'
+    
+    // 显示今天的天气信息
+    var item=el('div',{cls:'hourly-item',style:i>=currentHour+8?'display:none':''},
+      el('div',{cls:'hourly-time'},timeStr),
+      el('div',{cls:'hourly-icon'},getWeatherIcon(todayForecast.forecastWeather)),
+      el('div',{cls:'hourly-temp'},todayForecast.forecastMaxtemp.value+'°'),
+      el('div',{cls:'hourly-rain'},'--%降雨')
+    )
+    grid.appendChild(item)
+  }
+  
+  mhw.appendChild(toggleBtn)
+  mhw.appendChild(grid)
+}
+
+// 渲染5天天气
+function renderDailyWeather(data,mdw){
+  if(!data||!data.weatherForecast||!mdw)return
+  var daily=data.weatherForecast.slice(0,5)
+  mdw.innerHTML=''
+  var grid=el('div',{cls:'daily-weather'})
+  daily.forEach(function(d){
+    // 解析日期格式：YYYYMMDD -> Date
+    var year=parseInt(d.forecastDate.substring(0,4))
+    var month=parseInt(d.forecastDate.substring(4,6))-1 // 月份从0开始
+    var day=parseInt(d.forecastDate.substring(6,8))
+    var dateStr=new Date(year,month,day).toLocaleDateString('zh-HK',{month:'short',day:'numeric',weekday:'short'})
+    // 转换PSR（显著降雨概率）为可读格式
+    var psrText=''
+    switch(d.PSR){
+      case '高': psrText='高降雨機率'; break;
+      case '中高': psrText='中高降雨機率'; break;
+      case '中': psrText='中降雨機率'; break;
+      case '中低': psrText='中低降雨機率'; break;
+      case '低': psrText='低降雨機率'; break;
+      default: psrText='--%降雨'; break;
+    }
+    
+    var item=el('div',{cls:'daily-item'},
+      el('div',{cls:'daily-date'},dateStr),
+      el('div',{cls:'daily-icon'},getWeatherIcon(d.forecastWeather)),
+      el('div',{cls:'daily-temp'},d.forecastMintemp.value+'° - '+d.forecastMaxtemp.value+'°'),
+      el('div',{cls:'daily-rain'},psrText)
+    )
+    grid.appendChild(item)
+  })
+  mdw.appendChild(grid)
+}
+
+// 加载天气数据
+function loadWeather(){
+  // 动态获取天气组件的 DOM 元素
+  var mwp=document.getElementById('weather-panel')
+  var mhw=document.getElementById('hourly-weather')
+  var mdw=document.getElementById('daily-weather')
+  
+  console.log('=== loadWeather 被调用 ===')
+  console.log('weather-panel DOM 元素:', mwp)
+  console.log('hourly-weather DOM 元素:', mhw)
+  console.log('daily-weather DOM 元素:', mdw)
+  
+  if(!mwp || !mhw || !mdw){
+    console.error('天气组件 DOM 元素未找到')
+    return
+  }
+  
+  getWeatherData(function(err,data){
+    console.log('=== getWeatherData 回调 ===')
+    
+    if(err){
+      console.error('获取天气数据失败:', err)
+      mwp.innerHTML='<div class="empty-card"><h3>無法載入天氣數據</h3><p>請檢查網絡連線</p></div>'
+      return
+    }
+    
+    console.log('天气数据获取成功')
+    console.log('天气数据:', data)
+    
+    try {
+      renderHourlyWeather(data,mhw)
+      console.log('renderHourlyWeather 调用成功')
+    } catch (error) {
+      console.error('renderHourlyWeather 调用失败:', error)
+    }
+    
+    try {
+      renderDailyWeather(data,mdw)
+      console.log('renderDailyWeather 调用成功')
+    } catch (error) {
+      console.error('renderDailyWeather 调用失败:', error)
+    }
+  })
+}
 
 function at(){var t=M.tabs.find(function(x){return x.id===M.activeTabId});if(!t&&M.tabs.length>0){t=M.tabs[0];}return t}
 
@@ -539,9 +752,35 @@ mab.addEventListener('click',function(){
    try{localStorage.setItem('hk-bus-v5',s)}catch(e){}
  }
 
-function init(){loadAll();setInterval(refreshEtas,30000)}
-init()
+// 确保 DOM 完全加载后再初始化
+function init(){
+  console.log('=== init 函数被调用 ===')
+  loadAll()
+  setInterval(refreshEtas,30000)
+  // 确保 DOM 完全加载后再加载天气数据和按钮事件
+  setTimeout(function() {
+    console.log('=== setTimeout 回调 ===')
+    loadWeather()
+    // 添加加载天气数据按钮事件
+    var loadWeatherBtn = Q('load-weather-btn')
+    if (loadWeatherBtn) {
+      loadWeatherBtn.addEventListener('click', function() {
+        console.log('手動載入天氣數據')
+        loadWeather()
+      })
+    }
+  }, 1000)
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', function(){
+    init()
+  })
+}else{
+  init()
+}
 })()
 </script>
+</div>
 </body>
 </html>

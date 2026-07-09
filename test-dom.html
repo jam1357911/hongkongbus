@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试 DOM 元素获取</title>
+</head>
+<body>
+    <div class="weather-panel" id="weather-panel">
+        <div class="weather-header">
+            <h2 class="weather-title">天氣預報</h2>
+            <p class="weather-subtitle">香港天文台數據</p>
+        </div>
+        <div class="weather-grid">
+            <div id="hourly-weather"></div>
+            <div id="daily-weather"></div>
+        </div>
+    </div>
+
+    <script>
+        console.log('DOM 加载状态:', document.readyState);
+        
+        function testDOM() {
+            console.log('=== 测试 DOM 元素获取 ===');
+            
+            var mwp = document.getElementById('weather-panel');
+            var mhw = document.getElementById('hourly-weather');
+            var mdw = document.getElementById('daily-weather');
+            
+            console.log('weather-panel:', {
+                element: mwp,
+                exists: !!mwp,
+                tagName: mwp?.tagName,
+                className: mwp?.className
+            });
+            
+            console.log('hourly-weather:', {
+                element: mhw,
+                exists: !!mhw,
+                tagName: mhw?.tagName,
+                className: mhw?.className
+            });
+            
+            console.log('daily-weather:', {
+                element: mdw,
+                exists: !!mdw,
+                tagName: mdw?.tagName,
+                className: mdw?.className
+            });
+            
+            if (mwp && mhw && mdw) {
+                console.log('✅ 所有 DOM 元素都已成功获取');
+            } else {
+                console.log('❌ 某些 DOM 元素未找到');
+            }
+        }
+        
+        // 页面加载完成后测试
+        window.addEventListener('load', function() {
+            console.log('页面完全加载完成');
+            testDOM();
+        });
+        
+        // DOM 内容加载完成后测试
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM 内容加载完成');
+            testDOM();
+        });
+        
+        // 立即测试
+        testDOM();
+    </script>
+</body>
+</html>
