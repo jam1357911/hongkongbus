@@ -17,7 +17,8 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 .tab-list{display:flex;gap:8px;flex-wrap:wrap}
 .tab-button{border:1px solid transparent;background:var(--card-muted);color:var(--text-h);padding:10px 14px;border-radius:999px;cursor:pointer;font:inherit;font-size:20px;font-weight:600}
 .tab-button.active,.tab-button:hover{border-color:var(--accent);background:var(--accent-bg)}
-.tab-actions{display:flex;gap:8px}
+.tab-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tab-stations{color:#e53935;font-size:13px;font-weight:600;line-height:1.4}
 .tab-meta{display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:16px}
 .tab-meta .field{flex:1}
 .field{display:flex;flex-direction:column;gap:6px}
@@ -381,9 +382,16 @@ function renderTabs(){
   mtb.innerHTML=''
   var l=el('div',{cls:'tab-list'})
   M.tabs.forEach(function(t){
-    l.appendChild(el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),ev:{click:function(){M.activeTabId=t.id;saveAll();renderBoard()}}},t.name))
+    l.appendChild(el('button',{type:'button',cls:'tab-button'+(t.id===M.activeTabId?' active':''),ev:{click:function(){M.activeTabId=t.id;saveAll();renderBoard();refreshEtas()}}},t.name))
   })
   var a=el('div',{cls:'tab-actions'})
+  // 目前分頁包含的車站（去重後顯示在分頁列右邊）
+  var act=at()
+  if(act){
+    var seen={},st=[]
+    act.favourites.forEach(function(f){var n=f.snt;if(n&&!seen[n]){seen[n]=1;st.push(n)}})
+    if(st.length)a.appendChild(el('span',{cls:'tab-stations'},'車站：'+st.join('、')))
+  }
   a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){
     // 新增分頁时，不修改当前分頁的名称
     var t2 = defTab(M.tabs.length + 1);
