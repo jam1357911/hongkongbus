@@ -206,6 +206,19 @@
 .tab-button {
   padding: 10px 14px;
   border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tab-stations {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.7;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .tab-meta {

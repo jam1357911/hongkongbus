@@ -522,16 +522,22 @@ function App() {
       <section className="board-panel">
         <div className="tabs-bar">
           <div className="tab-list">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                className={`tab-button ${tab.id === activeTab.id ? 'active' : ''}`}
-                onClick={() => setActiveTabId(tab.id)}
-              >
-                {tab.name}
-              </button>
-            ))}
+            {tabs.map((tab) => {
+              const stationNames = [...new Set(tab.favourites.map((f) => f.stopNameTc))]
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  className={`tab-button ${tab.id === activeTab.id ? 'active' : ''}`}
+                  onClick={() => setActiveTabId(tab.id)}
+                >
+                  <span>{tab.name}</span>
+                  {stationNames.length > 0 && (
+                    <span className="tab-stations">{stationNames.join('、')}</span>
+                  )}
+                </button>
+              )
+            })}
           </div>
           <div className="tab-actions">
             <button type="button" className="secondary-button" onClick={addTab}>
