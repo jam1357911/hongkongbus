@@ -107,7 +107,49 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
   .hourly-rain{font-size:10px}
   .daily-item{grid-template-columns:1fr auto auto auto}
 }
-</style>
+/* ===== 轉乘組合 transfer combo ===== */
+.mode-toggle{display:flex;gap:8px;margin-bottom:14px}
+.mode-btn{flex:1;padding:10px 14px;border-radius:14px;border:1px solid var(--border);background:var(--card-muted);color:var(--text-h);font:inherit;font-size:15px;font-weight:700;cursor:pointer;text-align:center}
+.mode-btn.active{border-color:var(--accent);background:var(--accent-bg)}
+.picker-block{border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:12px;background:var(--card-muted)}
+.picker-heading h3{font-size:16px;color:var(--text-h);margin-bottom:4px}
+.picker-heading p{font-size:13px;margin-bottom:10px}
+.transfer-pickers{display:grid;gap:12px}
+.match-toggle{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:13px;color:var(--text-h);cursor:pointer;flex-wrap:wrap}
+.same-stop-tag{display:inline-block;margin-left:6px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);border-radius:999px;padding:0 8px;font-size:11px;font-style:normal;font-weight:700}
+.transfer-status{margin:12px 0;font-size:14px;color:var(--text-h);font-weight:600}
+.transfer-section{margin-top:32px}
+.transfer-section-header{margin-bottom:12px}
+.transfer-section-header h3{font-size:18px;color:var(--text-h);margin-bottom:4px}
+.transfer-section-header p{font-size:13px}
+.transfer-grid{display:grid;gap:12px}
+.transfer-card{border:1px solid var(--border);border-radius:20px;padding:16px;background:linear-gradient(135deg,#12235c,#1e3a8a 55%,#312e81)}
+.transfer-heading h3{font-size:17px;font-weight:700;color:#fff6f6;margin:8px 0 2px}
+.transfer-direction{font-size:13px;color:#dfe3ff;margin-bottom:10px}
+.transfer-badges{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.transfer-route-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;font-size:13px;font-weight:700;color:#fff}
+.transfer-route-badge b{font-size:20px;line-height:1}
+.transfer-route-a{background:rgba(59,130,246,.5)}
+.transfer-route-b{background:rgba(34,197,94,.5)}
+.transfer-arrow{font-size:13px;color:#dfe3ff;font-weight:700;white-space:nowrap}
+.transfer-list{display:grid;gap:8px}
+.transfer-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.14);flex-wrap:wrap}
+.transfer-time-col{display:flex;flex-direction:column;gap:2px;min-width:150px}
+.transfer-info-col{display:flex;flex-direction:column;gap:3px;text-align:right;flex:1;align-items:flex-end}
+.transfer-dest{font-size:14px;color:#fff}
+.transfer-info-col small{font-size:12px;color:#dfe3ff}
+.leg-pill{display:inline-block;align-self:flex-start;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:800;color:#fff}
+.leg-pill-a{background:#2563eb}
+.leg-pill-b{background:#16a34a}
+.transfer-time-col strong{font-size:18px;color:#fff;font-weight:800}
+.transfer-time-col span{font-size:13px;color:#dfe3ff}
+.gap-badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.gap-badge-value{background:rgba(251,191,36,.28);color:#ffd76a}
+.gap-badge-none{color:#c9cdf0;background:rgba(255,255,255,.12)}
+.transfer-footer{margin-top:12px;font-size:13px;opacity:.85;color:#fff6f6}
+.transfer-card .error-text{color:#ffb4b4}
+.transfer-card .muted{color:#dfe3ff}
+@media(max-width:560px){.transfer-row{flex-direction:column;align-items:flex-start}.transfer-info-col{text-align:left;align-items:flex-start}}</style>
 </head>
 <body>
 <div id="root">
@@ -127,9 +169,18 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 <div class="fastest-grid" id="fastest-grid"></div>
 </div>
 <div class="favourite-grid" id="favourite-grid"></div>
+<div class="transfer-section" id="transfer-section" style="display:none">
+<div class="transfer-section-header"><h3>轉乘組合</h3><p>合併 A、B 兩程最近 3 班到站時間，並顯示每班 B 與上一班 A 相差多少分鐘。</p></div>
+<div class="transfer-grid" id="transfer-grid"></div>
+</div>
 </div>
 <div class="builder-panel" id="builder">
-<div class="panel-header"><h2>加入新站點</h2><p>搜尋路線，再選方向與站點。</p></div>
+<div class="panel-header"><h2>加入站點</h2><p>揀路線、方向與站點，或加入轉乘組合。</p></div>
+<div class="mode-toggle">
+<button type="button" class="mode-btn active" id="mode-stop-btn">加入站點</button>
+<button type="button" class="mode-btn" id="mode-transfer-btn">加入轉乘</button>
+</div>
+<div id="stop-mode">
 <div class="section-block">
 <h3 style="font-size:15px;font-weight:700;color:var(--text-h);margin-bottom:8px">批量加入：搜尋車站（九巴）</h3>
 <input id="bulk-stop-search" placeholder="例如 尖沙咀碼頭" style="width:100%;border:1px solid var(--border);border-radius:14px;background:var(--input-bg);color:var(--text-h);padding:10px 14px;font:inherit;font-size:14px;margin-bottom:8px;box-sizing:border-box">
@@ -145,7 +196,12 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 </div>
 <button type="button" class="primary-button" id="add-btn" disabled>加入目前分頁</button>
 </div>
-<div class="weather-panel" id="weather-panel">
+<div id="transfer-mode" style="display:none">
+<div class="transfer-pickers" id="transfer-pickers"></div>
+<div class="transfer-status" id="transfer-status"></div>
+<button type="button" class="primary-button" id="add-transfer-btn" disabled>加入轉乘組合到目前分頁</button>
+</div>
+</div><div class="weather-panel" id="weather-panel">
 <div class="weather-header">
   <h2 class="weather-title">天氣預報</h2>
   <p class="weather-subtitle">香港天文台數據</p>
@@ -161,7 +217,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 
 <script>
 (function(){
-var M={tabs:[],activeTabId:'',collapsed:{},selectedRoute:null,selectedDir:null,stops:[],selectedStopId:'',etaMap:{}}
+var M={tabs:[],activeTabId:'',collapsed:{},selectedRoute:null,selectedDir:null,stops:[],selectedStopId:'',etaMap:{},trEta:{}}
 
 function el(t,c){
   var e=document.createElement(t)
@@ -171,7 +227,7 @@ function el(t,c){
 }
 
 function uid(){return 'id-'+Date.now()+'-'+Math.random().toString(36).slice(2,8)}
-function defTab(i){return{id:uid(),name:'分頁 '+i,favourites:[]}}
+function defTab(i){return{id:uid(),name:'分頁 '+i,favourites:[],transfers:[]}}
 function fmt(eta){if(!eta)return'--';var m=Math.round((new Date(eta).getTime()-Date.now())/60000);return m<=0?'即將到站':m+' 分鐘'}
 function fk(f){return f.op+':'+f.rt+':'+f.dir+':'+f.stype+':'+f.sid}
 function dc(d){return d==='outbound'?'O':'I'}
@@ -390,6 +446,7 @@ function renderTabs(){
   if(act){
     var seen={},st=[]
     act.favourites.forEach(function(f){var n=f.snt;if(n&&!seen[n]){seen[n]=1;st.push(n)}})
+    ;(act.transfers||[]).forEach(function(tr){(tr.legA?[tr.legA,tr.legB]:[]).forEach(function(l){var n=l&&l.snt;if(n&&!seen[n]){seen[n]=1;st.push(n)}})})
     if(st.length)a.appendChild(el('span',{cls:'tab-stations'},'車站：'+st.join('、')))
   }
   a.appendChild(el('button',{type:'button',cls:'secondary-button',ev:{click:function(){
@@ -452,6 +509,7 @@ function renderBoard(){
   var t=at();if(!t)return
   mtn.value=t.name
   renderFavourites()
+  renderTransfers()
   renderFastest()
   // 移除自动保存逻辑，避免页面加载时覆盖数据
 }
@@ -461,7 +519,8 @@ function renderFavourites(){
   mfg.innerHTML=''
   var t=at();if(!t)return
   if(!t.favourites.length){
-    mfg.innerHTML='<div class="empty-card"><h3>這個分頁還沒有站點</h3><p>往下拉加入新站點，搜尋路線、選方向和站點，然後加入目前分頁即可。</p></div>'
+    if(t.transfers&&t.transfers.length){mfg.innerHTML='';return}
+    mfg.innerHTML='<div class="empty-card"><h3>這個分頁還沒有站點</h3><p>用下方「加入站點」揀路線/方向/站點,或轉去「加入轉乘」加轉乘組合。</p></div>'
     return
   }
   t.favourites.forEach(function(f){
@@ -517,7 +576,10 @@ function renderFastest(){
 
 // ---- ETA refresh ----
 function refreshEtas(){
-  var t=at();if(!t||!t.favourites.length)return
+  var t=at();if(!t)return
+  var hasFav=t.favourites&&t.favourites.length>0
+  var hasTr=t.transfers&&t.transfers.length>0
+  if(!hasFav&&!hasTr)return
   var tabId=t.id
   t.favourites.forEach(function(f){M.etaMap[f.id]=M.etaMap[f.id]||{};M.etaMap[f.id].loading=true;delete M.etaMap[f.id].error})
   renderFavourites()
@@ -538,6 +600,7 @@ function refreshEtas(){
       if(at().favourites.length>=3)renderFastest()
     })
   })
+  refreshTransferEtas()
 }
 
 // ---- route search ----
@@ -738,6 +801,406 @@ mab.addEventListener('click',function(){
     if(added){renderBoard();refreshEtas();saveAll();bs.value='';brs.innerHTML='';bab.style.display='none';bulkStop=null}
   })
 
+// ================= 轉乘組合 transfer combo (vanilla) =================
+// 喺呢個檔案內嘅函數會被合併入 index.html 嘅主 IIFE(位於 persistence 之前)。
+
+// 揀路線(九巴+城巴合併搜尋)
+function tfSearchRoutes(q, done){
+  var all=[],seen={},c1=0,c2=0
+  function check(){
+    if(c1+c2<2)return
+    all.sort(function(a,b){return a.rt.localeCompare(b.rt,'en',{numeric:true})})
+    done(q?all.filter(function(i){return i.mt.indexOf(q.toLowerCase())!==-1}):all.slice(0,80))
+  }
+  gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,kmb){
+    c1=1
+    if(!e&&kmb)kmb.data.forEach(function(r){var k='kmb:'+r.route;if(!seen[k]){seen[k]=1;all.push({op:'kmb',on:'九巴/龍運',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+r.orig_tc+r.dest_tc+r.orig_en+r.dest_en).toLowerCase()})}})
+    check()
+  })
+  gs('https://rt.data.gov.hk/v2/transport/citybus/route/CTB',function(e,ctb){
+    c2=1
+    if(ctb)ctb.data.forEach(function(r){var k='ctb:'+r.route;if(!seen[k]){seen[k]=1;all.push({op:'ctb',on:'城巴',rt:r.route,sm:r.orig_tc+' -> '+r.dest_tc,mt:(r.route+r.orig_tc+r.dest_tc+r.orig_en+r.dest_en).toLowerCase()})}})
+    check()
+  })
+}
+
+// 載入方向
+function tfLoadDirs(rtOp,rt,cb){
+  if(rtOp==='kmb'){
+    gt('https://data.etabus.gov.hk/v1/transport/kmb/route/',function(e,kmb){
+      if(e){cb([]);return}
+      var opts=kmb.data.filter(function(x){return x.route.toLowerCase()===rt.toLowerCase()}).map(function(x){return{direction:bt(x.bound),directionCode:x.bound,serviceType:x.service_type,label:x.orig_tc+' -> '+x.dest_tc+(x.service_type!=='1'?'(特'+x.service_type+')':''),stopCount:0}})
+      var seen={},out=[]
+      opts.forEach(function(o){var k=o.direction+'-'+o.serviceType;if(!seen[k]){seen[k]=1;out.push(o)}})
+      cb(out)
+    })
+  }else{
+    var dirs=[],p1=0,p2=0
+    function check(){if(p1<2||p2<4)return;cb(dirs.filter(Boolean))}
+    for(var i=0;i<2;i++)(function(idx){loadOne(idx===0?'outbound':'inbound')})(i)
+    function loadOne(dir){
+      gs('https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/'+encodeURIComponent(rt)+'/'+dir,function(e,cr){
+        p1++;if(!cr||!cr.data||!cr.data.length){check();return}
+        gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(cr.data[0].stop),function(e2,fr){
+          p2++
+          gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(cr.data[cr.data.length-1].stop),function(e3,lr){
+            p2++
+            var fn=fr&&fr.data?fr.data.name_tc:'起點'
+            var ln=lr&&lr.data?lr.data.name_tc:'終點'
+            var idx=dir==='outbound'?0:1
+            dirs[idx]={direction:dir,directionCode:dir==='outbound'?'O':'I',serviceType:'1',label:fn+' -> '+ln,stopCount:cr.data.length}
+            check()
+          })
+        })
+      })
+    }
+  }
+}
+
+// 載入站點
+function tfLoadStops(rtOp,rt,dir,stype,cb){
+  if(rtOp==='kmb'){
+    gt('https://data.etabus.gov.hk/v1/transport/kmb/route-stop/'+encodeURIComponent(rt)+'/'+encodeURIComponent(dir)+'/'+encodeURIComponent(stype),function(e1,rs){
+      if(e1){cb([]);return}
+      gt('https://data.etabus.gov.hk/v1/transport/kmb/stop',function(e2,as){
+        if(e2){cb([]);return}
+        var sm={};as.data.forEach(function(s){sm[s.stop]={n:s.name_tc,e:s.name_en}})
+        cb(rs.data.map(function(r){return{stopId:r.stop,seq:Number(r.seq),nameTc:sm[r.stop]?sm[r.stop].n:'站'+r.stop.slice(0,6),nameEn:sm[r.stop]?sm[r.stop].e:'Stop '+r.stop.slice(0,6)}}))
+      })
+    })
+  }else{
+    gs('https://rt.data.gov.hk/v2/transport/citybus/route-stop/CTB/'+encodeURIComponent(rt)+'/'+encodeURIComponent(dir),function(e,cr){
+      if(!cr||!cr.data){cb([]);return}
+      var out=[],cnt=0,don=false,total=cr.data.length
+      cr.data.forEach(function(rec,i){
+        gs('https://rt.data.gov.hk/v2/transport/citybus/stop/'+encodeURIComponent(rec.stop),function(e2,s){
+          cnt++;out[i]={stopId:rec.stop,seq:rec.seq,nameTc:s&&s.data?s.data.name_tc:'站'+rec.stop,nameEn:s&&s.data?s.data.name_en:'Stop '+rec.stop}
+          if(!don&&cnt>=total){don=true;cb(out)}
+        })
+      })
+    })
+  }
+}
+
+// 建立一個「路線 → 方向 → 站點」揀選器(轉乘用,每程一個)
+function makeLegPicker(opts){
+  // opts: {root, heading, hint, isB}
+  var root=opts.root
+  var P={root:root,q:'',routes:[],route:null,dirs:[],dir:null,stops:[],stopId:'',filter:'',matchOnly:opts.isB,busyRoute:false,busyDirs:false,busyStops:false,err:'',matchStopName:null,onChange:opts.onChange||function(){}}
+  P.isB=!!opts.isB
+  var timer=null
+
+  function build(){
+    var head=el('div',{cls:'picker-heading'},el('h3',null,opts.heading),opts.hint?el('p',{cls:'muted'},opts.hint):null)
+    var lbl=el('label',{cls:'field'},el('span',null,'搜尋路線'),el('input',{type:'text',placeholder:'例如 1A、970、機場',ev:{input:function(){var v=this.value;clearTimeout(timer);timer=setTimeout(function(){P.q=v;doSearch()},300)}}}))
+    P.resultsEl=el('div',{cls:'result-list'})
+    P.noteEl=el('p',{cls:'muted picker-note',style:'display:none'})
+    P.dirBlock=el('div',{cls:'section-block',style:'display:none'},el('h3',null,'方向'),P.dirsEl=el('div',{cls:'choice-list'}))
+    P.stopBlock=el('div',{cls:'section-block',style:'display:none'},
+      el('div',{cls:'section-title'},el('h3',null,'站點'),el('input',{type:'text',placeholder:'過濾站點',ev:{input:function(){P.filter=this.value;renderStops()}}})),
+      P.matchWrap=el('label',{cls:'match-toggle',style:'display:none'},
+        el('input',{type:'checkbox',checked:P.matchOnly,ev:{change:function(){P.matchOnly=this.checked;autoMatch();renderStops()}}}),
+        P.matchLabel=el('span',null,'只顯示與路線 A 相同站名')),
+      P.stopsEl=el('div',{cls:'stop-list'}))
+    P.errEl=el('p',{cls:'error-text',style:'display:none'})
+    root.appendChild(head);root.appendChild(lbl);root.appendChild(P.resultsEl);root.appendChild(P.noteEl);root.appendChild(P.dirBlock);root.appendChild(P.stopBlock);root.appendChild(P.errEl)
+  }
+
+  function setBusy(k,v){P['busy'+k]=v}
+
+  function doSearch(){
+    P.resultsEl.innerHTML=''
+    if(!P.q.trim()){P.resultsEl.appendChild(el('p',{cls:'muted'},'搜尋路線...'));tfSearchRoutes('',function(r){P.routes=r;renderRoutes()});return}
+    P.resultsEl.appendChild(el('p',{cls:'muted'},'搜尋中...'))
+    tfSearchRoutes(P.q,function(r){P.routes=r;renderRoutes()})
+  }
+
+  function renderRoutes(){
+    P.resultsEl.innerHTML=''
+    var items=P.routes
+    if(!items||!items.length){P.resultsEl.appendChild(el('p',{cls:'muted'},'冇符合嘅路線。'));return}
+    items.forEach(function(it){
+      var sel=P.route&&P.route.op===it.op&&P.route.rt===it.rt
+      P.resultsEl.appendChild(el('button',{type:'button',cls:'result-card'+(sel?' selected':''),ev:{click:function(){P.route=it;P.dir=null;P.stops=[];P.stopId='';P.err='';renderRoutes();afterRoute()}}},el('strong',null,it.on+' '+it.rt),el('span',null,it.sm)))
+    })
+  }
+
+  function afterRoute(){
+    P.dirsEl.innerHTML=''
+    P.dirBlock.style.display=''
+    P.stopBlock.style.display='none'
+    P.dirsEl.appendChild(el('p',{cls:'muted'},'載入方向中...'))
+    tfLoadDirs(P.route.op,P.route.rt,function(dirs){
+      P.dirs=dirs
+      if(!dirs.length){P.dirsEl.innerHTML='';P.dirsEl.appendChild(el('p',{cls:'muted'},'呢條路線暫時冇方向資料。'));return}
+      renderDirs()
+    })
+    report()
+  }
+
+  function renderDirs(){
+    P.dirsEl.innerHTML=''
+    P.dirs.forEach(function(d){
+      var sel=P.dir&&P.dir.direction===d.direction&&P.dir.serviceType===d.serviceType
+      P.dirsEl.appendChild(el('button',{type:'button',cls:'choice-chip'+(sel?' selected':''),ev:{click:function(){P.dir=d;P.stopId='';renderDirs();afterDir()}}},el('strong',null,d.label),el('span',null,(d.direction==='outbound'?'去程':'回程')+(d.serviceType!=='1'?'·班次'+d.serviceType:'')+(d.stopCount>0?'·'+d.stopCount+'站':''))))
+    })
+  }
+
+  function afterDir(){
+    P.stopBlock.style.display=''
+    P.stopsEl.innerHTML=''
+    P.stopsEl.appendChild(el('p',{cls:'muted'},'載入站點中...'))
+    tfLoadStops(P.route.op,P.route.rt,P.dir.direction,P.dir.serviceType,function(stops){
+      P.stops=stops
+      autoMatch()
+      renderStops()
+      // 上報而家嘅揀選(自動揀中唯一同名站時,「加入」掣即刻可用)
+      report()
+    })
+  }
+
+  // 同名站處理:matchOnly 開啟且有 A 站名時,filter 至同名站;剩一個就自動揀埋
+  function autoMatch(){
+    if(P.isB&&P.matchOnly&&P.matchStopName){
+      var same=P.stops.filter(function(s){return s.nameTc===P.matchStopName})
+      P.noteEl.style.display=same.length?'none':''
+      if(!same.length){
+        P.noteEl.textContent='呢條路線冇站名完全相同嘅站,可以取消勾選「只顯示同名站」再手動揀最近嘅站。'
+        P.stopId='';P.noteEl.style.display=''
+        return
+      }
+      if(same.length===1){P.stopId=same[0].stopId}
+      else if(!same.some(function(s){return s.stopId===P.stopId})){P.stopId=''}
+    }
+  }
+
+  function visibleStops(){
+    var list=P.stops
+    if(P.isB&&P.matchOnly&&P.matchStopName)list=list.filter(function(s){return s.nameTc===P.matchStopName})
+    var k=P.filter.trim().toLowerCase()
+    if(!k)return list
+    return list.filter(function(s){return (String(s.seq)+' '+s.nameTc+' '+s.nameEn).toLowerCase().indexOf(k)!==-1})
+  }
+
+  function renderStops(){
+    P.stopsEl.innerHTML=''
+    if(P.isB){P.matchWrap.style.display=P.matchStopName?'':'none';P.matchLabel.textContent=P.matchStopName?'只顯示與路線 A 相同站名「'+P.matchStopName+'」':'只顯示與路線 A 相同站名'}
+    visibleStops().forEach(function(s){
+      var sel=P.stopId===s.stopId
+      var nameNode=el('span',{cls:'stop-name'},s.nameTc)
+      if(P.isB&&P.matchStopName&&s.nameTc===P.matchStopName)nameNode.appendChild(el('em',{cls:'same-stop-tag'},'轉乘站'))
+      P.stopsEl.appendChild(el('button',{type:'button',cls:'stop-row'+(sel?' selected':''),ev:{click:function(){P.stopId=s.stopId;P.err='';renderStops();report()}}},el('span',{cls:'stop-seq'},s.seq),nameNode))
+    })
+    if(!visibleStops().length&&P.stops.length)P.stopsEl.appendChild(el('p',{cls:'muted'},'冇符合條件嘅站點。'))
+  }
+
+  function report(){
+    P.onChange(sel())
+  }
+
+  function sel(){
+    if(!P.route||!P.dir)return null
+    var s=P.stops.find(function(x){return x.stopId===P.stopId})
+    if(!s)return null
+    return{op:P.route.op,on:P.route.on,rt:P.route.rt,sm:P.route.sm,dir:P.dir.direction,dl:P.dir.label,stype:P.dir.serviceType,sid:s.stopId,snt:s.nameTc,sne:s.nameEn}
+  }
+
+  function setMatchStopName(n){
+    P.matchStopName=n
+    if(!P.isB)return
+    if(n&&P.stops.length){autoMatch();renderStops()}
+    report()
+  }
+
+  build()
+  // expose
+  P.afterRoute=afterRoute
+  P.sel=sel
+  P.setMatchStopName=setMatchStopName
+  P.report=report
+  // 初始搜尋(空 query 顯示全部前 80 條)
+  doSearch()
+  return P
+}
+
+// 由揀選器攞「完整 leg」record
+function tfLegKey(leg){return leg?leg.op+':'+leg.rt+':'+leg.dir+':'+leg.stype+':'+leg.sid:''}
+
+// ---------- 轉乘方塊渲染 ----------
+function mergedRows(itemsA,itemsB){
+  var combined=[]
+  ;(itemsA||[]).slice(0,3).forEach(function(e,i){combined.push({leg:'A',eta:e,seq:i})})
+  ;(itemsB||[]).slice(0,3).forEach(function(e,i){combined.push({leg:'B',eta:e,seq:i})})
+  combined.sort(function(x,y){
+    var d=new Date(x.eta.eta).getTime()-new Date(y.eta.eta).getTime()
+    if(d!==0)return d
+    return x.leg==='A'?-1:1
+  })
+  var prevATime=null
+  return combined.map(function(row,index){
+    var time=new Date(row.eta.eta).getTime()
+    var gap=row.leg==='B'&&prevATime!==null?Math.max(0,Math.round((time-prevATime)/60000)):null
+    if(row.leg==='A')prevATime=time
+    return{key:row.leg+'-'+row.seq+'-'+index,leg:row.leg,eta:row.eta,gapMinutes:gap}
+  })
+}
+
+function transferCard(tr){
+  var stA=M.trEta[tr.id]&&M.trEta[tr.id].a||{loading:true,items:[],error:null,ts:null}
+  var stB=M.trEta[tr.id]&&M.trEta[tr.id].b||{loading:true,items:[],error:null,ts:null}
+  var loading=stA.loading||stB.loading
+  var rows=mergedRows(stA.items,stB.items)
+  var badge=el('div',{cls:'transfer-badges'},
+    el('span',{cls:'transfer-route-badge transfer-route-a'},el('b',null,tr.legA.rt),el('span',null,tr.legA.on)),
+    el('span',{cls:'transfer-arrow'},'轉乘 →'),
+    el('span',{cls:'transfer-route-badge transfer-route-b'},el('b',null,tr.legB.rt),el('span',null,tr.legB.on)))
+  var head=el('div',{cls:'eta-card-header'},
+    el('div',{cls:'transfer-heading'},badge,el('h3',null,tr.legA.snt),
+      el('p',{cls:'transfer-direction'},'喺呢個站由 '+tr.legA.rt+'（'+tr.legA.dl+'）轉乘 '+tr.legB.rt+'（'+tr.legB.dl+'）')),
+    el('div',{cls:'eta-card-actions'},el('button',{type:'button',cls:'icon-button',ev:{click:function(){removeTransfer(tr.id)}}},'移除')))
+  var list=el('div',{cls:'transfer-list'})
+  if(loading)list.appendChild(el('p',{cls:'muted'},'更新 ETA 中...'))
+  if(!loading&&stA.error)list.appendChild(el('p',{cls:'error-text'},'路線 '+tr.legA.rt+' 載入失敗:'+stA.error))
+  if(!loading&&stB.error)list.appendChild(el('p',{cls:'error-text'},'路線 '+tr.legB.rt+' 載入失敗:'+stB.error))
+  if(!loading&&!stA.error&&!stB.error&&!rows.length)list.appendChild(el('p',{cls:'muted'},'暫時沒有未來班次資料。'))
+  rows.forEach(function(r){
+    var pill=el('span',{cls:'leg-pill '+(r.leg==='A'?'leg-pill-a':'leg-pill-b')},r.leg==='A'?'A '+tr.legA.rt:'B '+tr.legB.rt)
+    var info=el('div',{cls:'transfer-info-col'},el('span',{cls:'transfer-dest'},r.eta.dt))
+    if(r.eta.rt)info.appendChild(el('small',null,r.eta.rt))
+    if(r.leg==='B'){
+      info.appendChild(el('span',{cls:'gap-badge '+(r.gapMinutes!==null?'gap-badge-value':'gap-badge-none')},r.gapMinutes!==null?'與上一班 A 相差 '+r.gapMinutes+' 分鐘':'早於所有 A'))
+    }
+    list.appendChild(el('div',{cls:'transfer-row'},el('div',{cls:'transfer-time-col'},pill,el('strong',null,fmt(r.eta.eta)),el('span',null,fmtClock(r.eta.eta))),info))
+  })
+  var ts=stA.ts||stB.ts||null
+  var footer=tr.legA.sm+' → 轉乘 → '+tr.legB.sm+(ts?' · 更新於 '+new Date(ts).toLocaleTimeString('zh-HK'):'')
+  return el('div',{cls:'transfer-card'},head,list,el('p',{cls:'transfer-footer'},footer))
+}
+
+function renderTransfers(){
+  var sec=Q('transfer-section'),grid=Q('transfer-grid')
+  var t=at()
+  var trs=t&&t.transfers||[]
+  if(!trs.length){sec.style.display='none';return}
+  sec.style.display=''
+  grid.innerHTML=''
+  trs.forEach(function(tr){grid.appendChild(transferCard(tr))})
+}
+
+function refreshTransferEtas(){
+  var t=at();if(!t||!t.transfers||!t.transfers.length)return
+  var tabId=t.id
+  t.transfers.forEach(function(tr){
+    M.trEta=M.trEta||{}
+    M.trEta[tr.id]=M.trEta[tr.id]||{}
+    ;['a','b'].forEach(function(w){
+      var st=M.trEta[tr.id][w]=M.trEta[tr.id][w]||{loading:false,items:[],error:null,ts:null}
+      st.loading=true;st.error=null
+    })
+  })
+  renderTransfers()
+  t.transfers.forEach(function(tr){
+    ;['a','b'].forEach(function(w){
+      var leg=w==='a'?tr.legA:tr.legB
+      var st=M.trEta[tr.id][w]
+      var fn=leg.op==='kmb'?gt:gs
+      var url=leg.op==='kmb'?'https://data.etabus.gov.hk/v1/transport/kmb/eta/'+encodeURIComponent(leg.sid)+'/'+encodeURIComponent(leg.rt)+'/'+encodeURIComponent(leg.stype):'https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/'+encodeURIComponent(leg.sid)+'/'+encodeURIComponent(leg.rt)
+      var timedOut=false,timeoutId=setTimeout(function(){timedOut=true;st.loading=false;st.items=[];st.error='請求逾時';st.ts=null;renderTransfers()},10000)
+      fn(url,function(err,r){
+        if(timedOut||at().id!==tabId)return
+        clearTimeout(timeoutId)
+        if(err){st.loading=false;st.items=[];st.error=err.message;st.ts=null}
+        else if(!r||!r.data){st.loading=false;st.items=[];st.error=null;st.ts=new Date().toISOString()}
+        else{
+          var items=r.data.filter(function(x){var ok=x.dir===dc(leg.dir)&&x.eta;if(leg.op==='kmb')ok=ok&&String(x.service_type)===leg.stype;return ok}).sort(function(a,b){return a.eta_seq-b.eta_seq}).slice(0,3).map(function(x){return{eta:x.eta,seq:x.eta_seq,rt:x.rmk_tc||'',re:x.rmk_en||'',dt:x.dest_tc,de:x.dest_en}})
+          st.loading=false;st.items=items;st.error=null;st.ts=new Date().toISOString()
+        }
+        renderTransfers()
+      })
+    })
+  })
+}
+
+function removeTransfer(id){
+  var t=at();if(!t)return
+  t.transfers=t.transfers.filter(function(x){return x.id!==id})
+  if(M.trEta)delete M.trEta[id]
+  saveAll()
+  renderBoard()
+  refreshEtas()
+}
+
+// ---------- builder 模式切換 + 揀站器 ----------
+var pickA=null,pickB=null
+
+function updateTransferAdd(){
+  var btn=Q('add-transfer-btn'),status=Q('transfer-status')
+  var sa=pickA&&pickA.sel(),sb=pickB&&pickB.sel()
+  if(!sa&&!sb){status.textContent='先揀路線 A 嘅轉車站,再揀路線 B。';btn.disabled=true;return}
+  if(sa&&!sb){status.textContent='路線 A:'+sa.on+' '+sa.rt+' @ '+sa.snt+' —— 而家揀路線 B。';btn.disabled=true;return}
+  if(!sa&&sb){status.textContent='仲未揀路線 A 嘅轉車站。';btn.disabled=true;return}
+  if(tfLegKey(sa)===tfLegKey(sb)){status.textContent='A、B 唔可以係同一程車。';btn.disabled=true;return}
+  var dup=(at().transfers||[]).some(function(x){return tfLegKey(x.legA)+'>'+tfLegKey(x.legB)===tfLegKey(sa)+'>'+tfLegKey(sb)})
+  if(dup){status.textContent='呢個轉乘組合已經加入咗。';btn.disabled=true;return}
+  status.textContent=sa.on+' '+sa.rt+'（'+sa.snt+'）轉乘 '+sb.on+' '+sb.rt+'（'+sb.snt+'）'
+  btn.disabled=false
+}
+
+function addTransferNow(){
+  var t=at();if(!t)return
+  var sa=pickA.sel(),sb=pickB.sel()
+  if(!sa||!sb)return
+  if(!t.transfers)t.transfers=[]
+  var tr={id:uid(),legA:sa,legB:sb}
+  t.transfers.push(tr)
+  saveAll()
+  renderBoard()
+  refreshEtas()
+  // 重設揀選器以便連續加入
+  pickA.root.innerHTML='';pickB.root.innerHTML=''
+  var ra=pickA.root,ca=pickA.cfg,rb=pickB.root,cb=pickB.cfg
+  pickA=makeLegPicker(ca);pickB=makeLegPicker(cb)
+  Q('transfer-status').textContent='已加入轉乘組合。可以再揀下一個。'
+  Q('add-transfer-btn').disabled=true
+}
+
+function setBuilderMode(m){
+  var stopBtn=Q('mode-stop-btn'),trBtn=Q('mode-transfer-btn')
+  var stop=Q('stop-mode'),tr=Q('transfer-mode')
+  if(m==='transfer'){
+    stopBtn.className='mode-btn';trBtn.className='mode-btn active'
+    stop.style.display='none';tr.style.display=''
+    if(!M._transferReady)initTransferUI()
+  }else{
+    stopBtn.className='mode-btn active';trBtn.className='mode-btn'
+    stop.style.display='';tr.style.display='none'
+  }
+}
+
+function bindTransferModeButtons(){
+  // mode buttons(啟動時即綁;揀站器延遲至首次入轉乘模式先建立)
+  Q('mode-stop-btn').addEventListener('click',function(){setBuilderMode('stop')})
+  Q('mode-transfer-btn').addEventListener('click',function(){setBuilderMode('transfer')})
+}
+
+function initTransferUI(){
+  M._transferReady=true
+  // pickers 容器
+  var host=Q('transfer-pickers')
+  var rootA=el('div',{cls:'picker-block'})
+  var rootB=el('div',{cls:'picker-block'})
+  host.appendChild(rootA);host.appendChild(rootB)
+  var cfgA={root:rootA,heading:'路線 A(轉乘起點)',hint:'揀轉車站:喺 A 程落車嘅站',isB:false,onChange:function(sa){
+    if(pickB)pickB.setMatchStopName(sa?sa.snt:null)
+    updateTransferAdd()
+  }}
+  var cfgB={root:rootB,heading:'路線 B(轉乘接駁)',hint:'揀完 A 站後,會自動只顯示同名站',isB:true,onChange:function(){updateTransferAdd()}}
+  pickA=makeLegPicker(cfgA);pickA.cfg=cfgA
+  pickB=makeLegPicker(cfgB);pickB.cfg=cfgB
+  Q('add-transfer-btn').addEventListener('click',addTransferNow)
+  updateTransferAdd()
+}
+
 // ---- persistence ----
  var _loaded=false
  function loadAll(){
@@ -757,6 +1220,7 @@ mab.addEventListener('click',function(){
      M.activeTabId=defaultTab.id
      _loaded=true
    }
+   M.tabs.forEach(function(tb){if(!tb.transfers)tb.transfers=[]})
    var activeTab=M.tabs.find(function(x){return x.id===M.activeTabId})
    if(!activeTab&&M.tabs.length>0)M.activeTabId=M.tabs[0].id
    M._ready=true
@@ -775,6 +1239,7 @@ mab.addEventListener('click',function(){
 function init(){
   console.log('=== init 函数被调用 ===')
   loadAll()
+  bindTransferModeButtons()
   setInterval(refreshEtas,30000)
   // 确保 DOM 完全加载后再加载天气数据和按钮事件
   setTimeout(function() {

@@ -1,105 +1,34 @@
-# 香港巴士 ETA 看板
+# 香港巴士 ETA 看板(單一檔案版)
 
-這是一個可部署到 Google Cloud Run 的單容器網站，提供：
+一個 **vanilla JS 單一檔案** 嘅香港巴士到站時間網頁,直接喺瀏覽器開
+`index.html` 就用到(file:// 都得,唔需要 server、唔需要裝依賴)。
 
-- 前端可搜尋香港巴士路線
-- 用戶可選擇特定路線、方向與站點
-- 可加入多個分頁，每個分頁保存自己的收藏站點
-- 每個收藏站點顯示未來 3 班車的到站時間
-- 資料由後端代理香港公開巴士 API 取得
+## 功能
 
-目前支援：
+- 可搜尋香港巴士路線(KMB / 龍運、城巴),揀方向與站點
+- 多個**分頁**,每個分頁保存自己嘅收藏站點
+- 每個收藏站點顯示未來 3 班車到站時間(倒數 + 鐘數)
+- **最快到站 3 條路線**面板
+- **批量加入**:搜尋一個車站,一次過加入所有行經路線(九巴)
+- **天氣預報**:香港天文台數據(今日 24 小時 + 未來 5 日,含降雨概率)
+- **轉乘組合(A 轉 B)**:
+  - 揀路線 A 喺轉車站 X 落車,再揀路線 B
+  - 揀 B 站時自動只顯示與 X **同名**嘅站;得一個同名站會自動揀埋,
+    冇同名站可取消勾選「只顯示同名站」手動揀
+  - 轉乘方塊合併 A、B 各 3 班共 **6 班到站時間一齊排序**,
+    每班 B 顯示同「上一班 A」相差幾多分鐘(接駁等候);
+    若該班 B 早過所有 A 會顯示「早於所有 A」
+- 資料直接由瀏覽器呼叫香港公開 API,ETA 每 30 秒自動重新整理
 
-- `KMB / 龍運`
-- `城巴`
+## 使用
 
-## 技術架構
-
-- 前端：`React + TypeScript + Vite`
-- 後端：`Express + TypeScript`
-- 部署：`Docker + Google Cloud Run`
-- 儲存方式：瀏覽器 `localStorage`
-
-## 本機開發
-
-先安裝依賴：
-
-```bash
-npm install
-npm --prefix frontend install
-```
-
-啟動前後端開發模式：
-
-```bash
-npm run dev
-```
-
-啟動後：
-
-- 前端：`http://localhost:5173`
-- 後端：`http://localhost:8080`
-
-## 正式建置
-
-```bash
-npm run build
-npm start
-```
-
-正式模式預設使用 `PORT=8080`。
-
-## Docker 建置
-
-```bash
-docker build -t hk-bus-board .
-docker run -p 8080:8080 hk-bus-board
-```
-
-## 部署到 Google Cloud Run
-
-先登入並選擇專案：
-
-```bash
-gcloud auth login
-gcloud config set project YOUR_GCP_PROJECT_ID
-```
-
-建議先啟用 API：
-
-```bash
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
-```
-
-直接從原始碼部署：
-
-```bash
-gcloud run deploy hk-bus-board ^
-  --source . ^
-  --region asia-east1 ^
-  --allow-unauthenticated
-```
-
-如果你偏好先建 Docker image，也可以：
-
-```bash
-gcloud builds submit --tag gcr.io/YOUR_GCP_PROJECT_ID/hk-bus-board
-gcloud run deploy hk-bus-board ^
-  --image gcr.io/YOUR_GCP_PROJECT_ID/hk-bus-board ^
-  --region asia-east1 ^
-  --allow-unauthenticated
-```
-
-## API 端點
-
-- `GET /api/routes?query=1A`
-- `GET /api/directions?operator=kmb&route=1A`
-- `GET /api/stops?operator=kmb&route=1A&direction=outbound&serviceType=1`
-- `GET /api/eta?operator=kmb&route=1A&direction=outbound&serviceType=1&stopId=A3ADFCDF8487ADB9`
-- `GET /api/health`
+直接用瀏覽器打開 `index.html`,或者將成個資料夾放上任何 static hosting。
 
 ## 注意事項
 
-- 分頁與收藏站點目前只保存在使用者本機瀏覽器。
-- 後端會快取路線與站點資料，減少對上游公開 API 的重複請求。
-- ETA 仍然會由前端定時重新整理。
+- 分頁、收藏同轉乘組合保存在瀏覽器本機 `localStorage`(`hk-bus-v5`)。
+- 舊版儲存資料(冇 `transfers` 欄位)載入時會自動補上,唔會影響現有收藏。
+- 資料來源:
+  - 九巴/龍運:`data.etabus.gov.hk`
+  - 城巴:`rt.data.gov.hk`
+  - 天氣:`data.weather.gov.hk`
