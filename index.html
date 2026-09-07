@@ -170,7 +170,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 </div>
 <div class="favourite-grid" id="favourite-grid"></div>
 <div class="transfer-section" id="transfer-section" style="display:none">
-<div class="transfer-section-header"><h3>轉乘組合</h3><p>合併 A、B 兩程最近 3 班到站時間，並顯示每班 B 與上一班 A 相差多少分鐘。</p></div>
+<div class="transfer-section-header"><h3>轉乘組合</h3><p>合併兩程各 3 班到站時間，並顯示第二程每班與上一班(第一程)相差多少分鐘。</p></div>
 <div class="transfer-grid" id="transfer-grid"></div>
 </div>
 </div>
@@ -900,7 +900,7 @@ function makeLegPicker(opts){
       el('div',{cls:'section-title'},el('h3',null,'站點'),el('input',{type:'text',placeholder:'過濾站點',ev:{input:function(){P.filter=this.value;renderStops()}}})),
       P.matchWrap=el('label',{cls:'match-toggle',style:'display:none'},
         el('input',{type:'checkbox',checked:P.matchOnly,ev:{change:function(){P.matchOnly=this.checked;autoMatch();renderStops()}}}),
-        P.matchLabel=el('span',null,'只顯示與路線 A 相同站名')),
+        P.matchLabel=el('span',null,'只顯示與第一程相同站名')),
       P.stopsEl=el('div',{cls:'stop-list'}))
     P.errEl=el('p',{cls:'error-text',style:'display:none'})
     root.appendChild(head);root.appendChild(lbl);root.appendChild(P.resultsEl);root.appendChild(P.noteEl);root.appendChild(P.dirBlock);root.appendChild(P.stopBlock);root.appendChild(P.errEl)
@@ -984,7 +984,7 @@ function makeLegPicker(opts){
 
   function renderStops(){
     P.stopsEl.innerHTML=''
-    if(P.isB){P.matchWrap.style.display=P.matchStopName?'':'none';P.matchLabel.textContent=P.matchStopName?'只顯示與路線 A 相同站名「'+P.matchStopName+'」':'只顯示與路線 A 相同站名'}
+    if(P.isB){P.matchWrap.style.display=P.matchStopName?'':'none';P.matchLabel.textContent=P.matchStopName?'只顯示與第一程相同站名「'+P.matchStopName+'」':'只顯示與第一程相同站名'}
     visibleStops().forEach(function(s){
       var sel=P.stopId===s.stopId
       var nameNode=el('span',{cls:'stop-name'},s.nameTc)
@@ -1064,11 +1064,11 @@ function transferCard(tr){
   if(!loading&&stB.error)list.appendChild(el('p',{cls:'error-text'},'路線 '+tr.legB.rt+' 載入失敗:'+stB.error))
   if(!loading&&!stA.error&&!stB.error&&!rows.length)list.appendChild(el('p',{cls:'muted'},'暫時沒有未來班次資料。'))
   rows.forEach(function(r){
-    var pill=el('span',{cls:'leg-pill '+(r.leg==='A'?'leg-pill-a':'leg-pill-b')},r.leg==='A'?'A '+tr.legA.rt:'B '+tr.legB.rt)
+    var pill=el('span',{cls:'leg-pill '+(r.leg==='A'?'leg-pill-a':'leg-pill-b')},r.leg==='A'?tr.legA.rt:tr.legB.rt)
     var info=el('div',{cls:'transfer-info-col'},el('span',{cls:'transfer-dest'},r.eta.dt))
     if(r.eta.rt)info.appendChild(el('small',null,r.eta.rt))
     if(r.leg==='B'){
-      info.appendChild(el('span',{cls:'gap-badge '+(r.gapMinutes!==null?'gap-badge-value':'gap-badge-none')},r.gapMinutes!==null?'與上一班 A 相差 '+r.gapMinutes+' 分鐘':'早於所有 A'))
+      info.appendChild(el('span',{cls:'gap-badge '+(r.gapMinutes!==null?'gap-badge-value':'gap-badge-none')},r.gapMinutes!==null?'與上一班 '+tr.legA.rt+' 相差 '+r.gapMinutes+' 分鐘':'早於所有 '+tr.legA.rt))
     }
     list.appendChild(el('div',{cls:'transfer-row'},el('div',{cls:'transfer-time-col'},pill,el('strong',null,fmt(r.eta.eta)),el('span',null,fmtClock(r.eta.eta))),info))
   })
@@ -1136,10 +1136,10 @@ var pickA=null,pickB=null
 function updateTransferAdd(){
   var btn=Q('add-transfer-btn'),status=Q('transfer-status')
   var sa=pickA&&pickA.sel(),sb=pickB&&pickB.sel()
-  if(!sa&&!sb){status.textContent='先揀路線 A 嘅轉車站,再揀路線 B。';btn.disabled=true;return}
-  if(sa&&!sb){status.textContent='路線 A:'+sa.on+' '+sa.rt+' @ '+sa.snt+' —— 而家揀路線 B。';btn.disabled=true;return}
-  if(!sa&&sb){status.textContent='仲未揀路線 A 嘅轉車站。';btn.disabled=true;return}
-  if(tfLegKey(sa)===tfLegKey(sb)){status.textContent='A、B 唔可以係同一程車。';btn.disabled=true;return}
+  if(!sa&&!sb){status.textContent='先揀第一程路線嘅轉車站,再揀第二程路線。';btn.disabled=true;return}
+  if(sa&&!sb){status.textContent='第一程:'+sa.on+' '+sa.rt+' @ '+sa.snt+' —— 而家揀第二程。';btn.disabled=true;return}
+  if(!sa&&sb){status.textContent='仲未揀第一程路線嘅轉車站。';btn.disabled=true;return}
+  if(tfLegKey(sa)===tfLegKey(sb)){status.textContent='第一程同第二程唔可以係同一程車。';btn.disabled=true;return}
   var dup=(at().transfers||[]).some(function(x){return tfLegKey(x.legA)+'>'+tfLegKey(x.legB)===tfLegKey(sa)+'>'+tfLegKey(sb)})
   if(dup){status.textContent='呢個轉乘組合已經加入咗。';btn.disabled=true;return}
   status.textContent=sa.on+' '+sa.rt+'（'+sa.snt+'）轉乘 '+sb.on+' '+sb.rt+'（'+sb.snt+'）'
@@ -1190,11 +1190,11 @@ function initTransferUI(){
   var rootA=el('div',{cls:'picker-block'})
   var rootB=el('div',{cls:'picker-block'})
   host.appendChild(rootA);host.appendChild(rootB)
-  var cfgA={root:rootA,heading:'路線 A(轉乘起點)',hint:'揀轉車站:喺 A 程落車嘅站',isB:false,onChange:function(sa){
+  var cfgA={root:rootA,heading:'第一程(轉乘起點)',hint:'揀轉車站:喺第一程落車嘅站',isB:false,onChange:function(sa){
     if(pickB)pickB.setMatchStopName(sa?sa.snt:null)
     updateTransferAdd()
   }}
-  var cfgB={root:rootB,heading:'路線 B(轉乘接駁)',hint:'揀完 A 站後,會自動只顯示同名站',isB:true,onChange:function(){updateTransferAdd()}}
+  var cfgB={root:rootB,heading:'第二程(轉乘接駁)',hint:'揀完第一程站後,會自動只顯示同名站',isB:true,onChange:function(){updateTransferAdd()}}
   pickA=makeLegPicker(cfgA);pickA.cfg=cfgA
   pickB=makeLegPicker(cfgB);pickB.cfg=cfgB
   Q('add-transfer-btn').addEventListener('click',addTransferNow)
