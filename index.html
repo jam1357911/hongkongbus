@@ -132,8 +132,8 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 .transfer-route-a{background:rgba(59,130,246,.5)}
 .transfer-route-b{background:rgba(34,197,94,.5)}
 .transfer-arrow{font-size:13px;color:#dfe3ff;font-weight:700;white-space:nowrap}
-.transfer-list{display:grid;gap:5px}
-.transfer-row{display:flex;gap:12px;align-items:center;padding:5px 10px;border-radius:12px;background:rgba(255,255,255,.14)}
+.transfer-list{display:grid;gap:8px}
+.transfer-row{display:flex;gap:12px;align-items:center;padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.14)}
 .transfer-leg-col{flex:0 0 auto;min-width:52px;display:flex;align-items:center}
 .transfer-mid-col{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px;font-size:13px;color:#dfe3ff}
 .transfer-mid-col .transfer-dest{font-size:14px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -147,7 +147,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 .transfer-time-main span{font-size:17px;color:#fff;font-weight:600}
 .gap-badge{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11px;font-weight:700;line-height:1.5}
 .gap-badge-value{background:rgba(251,191,36,.28);color:#ffd76a}
-.gap-badge-none{color:#c9cdf0;background:rgba(255,255,255,.12)}
+
 .transfer-footer{margin-top:8px;font-size:13px;opacity:.85;color:#fff6f6}
 .transfer-card .error-text{color:#ffb4b4}
 .transfer-card .muted{color:#dfe3ff}
@@ -1072,7 +1072,7 @@ function transferCard(tr){
     var timeSide=el('div',{cls:'transfer-time-side'},
       el('div',{cls:'transfer-time-main'},el('strong',null,fmt(r.eta.eta)),el('span',null,fmtClock(r.eta.eta))))
     if(r.leg==='B'){
-      timeSide.appendChild(el('span',{cls:'gap-badge '+(r.gapMinutes!==null?'gap-badge-value':'gap-badge-none')},r.gapMinutes!==null?'與上一班 '+tr.legA.rt+' 相差 '+r.gapMinutes+' 分鐘':'早於所有 '+tr.legA.rt))
+      if(r.gapMinutes!==null)timeSide.appendChild(el('span',{cls:'gap-badge gap-badge-value'},'與上一班 '+tr.legA.rt+' 相差 '+r.gapMinutes+' 分鐘'))
     }
     list.appendChild(el('div',{cls:'transfer-row'},el('div',{cls:'transfer-leg-col'},pill),mid,timeSide))
   })
