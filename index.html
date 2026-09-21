@@ -1313,12 +1313,34 @@ function initTransferUI(){
      localStorage.setItem('hk-bus-v5',s)
      // 寫入成功後保留上一版做備份,方便損壞時還原
      if(prev&&prev!==s){try{localStorage.setItem('hk-bus-v5-bak',prev)}catch(e){}}
+     clearHashBackup()
      return true
    }catch(e){
-     console.error('儲存失敗:',e)
-     showStorageNotice('⚠️ 無法儲存資料(瀏覽器儲存空間可能已滿,或處於私密模式),今次改動唔會保存。')
+     console.error('儲存失敗(改為網址備份):',e)
+     if(writeHashBackup(s)){
+       showStorageNotice('⚠️ 瀏覽器唔畀儲存(常見於手機開 file://)。已改用網址備份,請保留現時網址或者加入書籤,下次用同一網址開啟先會見到收藏。')
+     }else{
+       showStorageNotice('⚠️ 無法儲存資料(瀏覽器儲存空間可能已滿,或處於私密模式),今次改動唔會保存。')
+     }
      return false
    }
+ }
+
+ // localStorage 唔可用時,將資料寫入網址 hash 做後備(手機開 file:// 常見)
+ function writeHashBackup(s){
+   try{
+     var enc=encodeURIComponent(s)
+     if(enc.length>200000)return false
+     window.history.replaceState(null,'','#'+enc)
+     return true
+   }catch(e){return false}
+ }
+
+ // 成功寫入 localStorage 後,清走網址上嘅備份,避免網址過長
+ function clearHashBackup(){
+   try{
+     if(window.location.hash)window.history.replaceState(null,'',window.location.pathname+window.location.search)
+   }catch(e){}
  }
 
 // 确保 DOM 完全加载后再初始化
