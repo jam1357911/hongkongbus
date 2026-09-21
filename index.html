@@ -164,7 +164,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 <div class="tab-meta">
 <label class="field"><span>分頁名稱</span><input id="tab-name"></label>
 <button type="button" class="secondary-button" id="rename-btn">重新命名</button>
-<p class="muted">資料保存在瀏覽器本機。</p>
+<p class="muted" id="storage-status">資料保存在瀏覽器本機。</p>
 </div>
 <div id="fastest-panel" style="display:none">
 <div class="fastest-panel-header"><h3>最快到站 3 條路線</h3><p>根據這個分頁每個站的首班 ETA 排序</p></div>
@@ -506,6 +506,18 @@ mrb.addEventListener('touchstart',function(e){
     e.preventDefault()
 })
 
+// 顯示儲存狀態(分頁數 / 項目數),方便確認資料有冇真正寫入
+function updateStorageStatus(){
+  try{
+    var elx=document.getElementById('storage-status')
+    if(!elx)return
+    var n=0
+    ;(M.tabs||[]).forEach(function(tb){if(!tb)return;n+=(tb.favourites?tb.favourites.length:0);n+=(tb.transfers?tb.transfers.length:0)})
+    var warn=(M._lastSaveOk===false)?' · ⚠️ 未能儲存':''
+    elx.textContent='資料保存在瀏覽器本機 · 分頁 '+(M.tabs?M.tabs.length:0)+' · 項目 '+n+warn
+  }catch(e){}
+}
+
 function renderBoard(){
   // 每段獨立保護:任何一段出錯都唔會阻斷其他部分同儲存流程
   try{renderTabs()}catch(e){console.error('renderTabs 出錯:',e)}
@@ -514,6 +526,7 @@ function renderBoard(){
   try{renderFavourites()}catch(e){console.error('renderFavourites 出錯:',e)}
   try{renderTransfers()}catch(e){console.error('renderTransfers 出錯:',e)}
   try{renderFastest()}catch(e){console.error('renderFastest 出錯:',e)}
+  updateStorageStatus()
 }
 
 // ---- favourites ----
@@ -1259,7 +1272,11 @@ function initTransferUI(){
 
  function loadAll(){
    var p=null
-   try{p=parseStored(localStorage.getItem('hk-bus-v5'))}catch(e){}
+   try{
+     var raw=localStorage.getItem('hk-bus-v5')
+     M._rawHadData=!!raw
+     p=parseStored(raw)
+   }catch(e){}
    if(!p){
      // 主資料讀唔到(可能損壞):試最近一次嘅備份
      try{
@@ -1301,10 +1318,10 @@ function initTransferUI(){
    var s
    try{s=JSON.stringify({tabs:M.tabs,activeTabId:M.activeTabId,collapsed:M.collapsed})}
    catch(e){console.error('儲存失敗:無法序列化資料',e);return false}
-   // 防呆:如果今次資料完全空白,但原本儲存裏面有嘢,就唔覆蓋(避免一次意外清空所有收藏)
-   if(M._storedLoaded&&countSaved(M.tabs)===0&&(M._storedCount||0)>0){
-     console.error('偵測到空資料,為免清空原有收藏,已停止覆蓋儲存。')
-     showStorageNotice('⚠️ 偵測到資料異常(空資料),為免清空收藏已停止儲存;請重新整理頁面。')
+   // 防呆:原本儲存有資料但今次讀唔到(可能損壞),就唔好用空白資料覆蓋,免得一次清空所有收藏
+   if(M._rawHadData&&!M._storedLoaded){
+     console.error('讀取原有儲存失敗,已停止覆蓋以免清空資料。')
+     showStorageNotice('⚠️ 讀取原有儲存資料失敗,為免清空收藏已停止儲存;請重新整理頁面再試。')
      return false
    }
    try{
@@ -1314,11 +1331,15 @@ function initTransferUI(){
      // 寫入成功後保留上一版做備份,方便損壞時還原
      if(prev&&prev!==s){try{localStorage.setItem('hk-bus-v5-bak',prev)}catch(e){}}
      clearHashBackup()
+     M._lastSaveOk=true
+     updateStorageStatus()
      return true
    }catch(e){
      console.error('儲存失敗(改為網址備份):',e)
+     M._lastSaveOk=false
+     updateStorageStatus()
      if(writeHashBackup(s)){
-       showStorageNotice('⚠️ 瀏覽器唔畀儲存(常見於手機開 file://)。已改用網址備份,請保留現時網址或者加入書籤,下次用同一網址開啟先會見到收藏。')
+       showStorageNotice('⚠️ 瀏覽器唔畀儲存本機資料。已改用網址備份,請保留現時網址或者加入書籤,下次用同一網址開啟先會見到收藏。')
      }else{
        showStorageNotice('⚠️ 無法儲存資料(瀏覽器儲存空間可能已滿,或處於私密模式),今次改動唔會保存。')
      }
