@@ -507,13 +507,13 @@ mrb.addEventListener('touchstart',function(e){
 })
 
 function renderBoard(){
-  renderTabs()
+  // 每段獨立保護:任何一段出錯都唔會阻斷其他部分同儲存流程
+  try{renderTabs()}catch(e){console.error('renderTabs 出錯:',e)}
   var t=at();if(!t)return
   mtn.value=t.name
-  renderFavourites()
-  renderTransfers()
-  renderFastest()
-  // 移除自动保存逻辑，避免页面加载时覆盖数据
+  try{renderFavourites()}catch(e){console.error('renderFavourites 出錯:',e)}
+  try{renderTransfers()}catch(e){console.error('renderTransfers 出錯:',e)}
+  try{renderFastest()}catch(e){console.error('renderFastest 出錯:',e)}
 }
 
 // ---- favourites ----
@@ -535,7 +535,7 @@ function renderFavourites(){
     )
     var left=el('div',null,badge,el('h3',null,f.snt))
     var togBtn=el('button',{cls:'icon-button',ev:{click:function(){M.collapsed[f.id]=!M.collapsed[f.id];renderFavourites();saveAll()}}},c?'顯示全部':'只顯示首班')
-    var remBtn=el('button',{cls:'icon-button',ev:{click:function(){var ta=at();ta.favourites=ta.favourites.filter(function(x){return x.id!==f.id});delete M.etaMap[f.id];delete M.collapsed[f.id];renderBoard();saveAll()}}},'移除')
+    var remBtn=el('button',{cls:'icon-button',ev:{click:function(){var ta=at();ta.favourites=ta.favourites.filter(function(x){return x.id!==f.id});delete M.etaMap[f.id];delete M.collapsed[f.id];saveAll();renderBoard()}}},'移除')
     var hdr=el('div',{cls:'eta-card-header'},left,el('div',{cls:'eta-card-actions'},togBtn,remBtn))
     var elist=el('div',{cls:'eta-list'})
     if(s.loading)elist.appendChild(el('p',{cls:'muted'},'更新 ETA 中...'))
@@ -747,9 +747,9 @@ mab.addEventListener('click',function(){
   var nf={id:uid(),op:M.selectedRoute.op,on:M.selectedRoute.on,rt:M.selectedRoute.rt,sm:M.selectedRoute.sm,dir:M.selectedDir.direction,dl:M.selectedDir.label,stype:M.selectedDir.serviceType,sid:s.stopId,snt:s.nameTc,sne:s.nameEn}
   if(t.favourites.some(function(x){return fk(x)===fk(nf)}))return
   t.favourites.push(nf)
+  saveAll()
   renderBoard()
   refreshEtas()
-  saveAll()
 })
 
 // ---- bulk stop route add ----
@@ -800,7 +800,7 @@ mab.addEventListener('click',function(){
       var nf={id:uid(),op:'kmb',on:'九巴/龍運',rt:r.route,sm:sm,dir:bt(r.bound),dl:dl,stype:r.service_type,sid:stopId,snt:bulkStop.name_tc,sne:bulkStop.name_en}
       if(!t.favourites.some(function(x){return fk(x)===fk(nf)})){t.favourites.push(nf);added++}
     })
-    if(added){renderBoard();refreshEtas();saveAll();bs.value='';brs.innerHTML='';bab.style.display='none';bulkStop=null}
+    if(added){saveAll();renderBoard();refreshEtas();bs.value='';brs.innerHTML='';bab.style.display='none';bulkStop=null}
   })
 
 // ================= 轉乘組合 transfer combo (vanilla) =================
@@ -1205,38 +1205,120 @@ function initTransferUI(){
   updateTransferAdd()
 }
 
+// ---- storage 提示:寫入失敗(空間滿/私密模式)時通知用戶 ----
+ function showStorageNotice(msg){
+   try{
+     var ex=document.getElementById('storage-warning')
+     if(!ex){
+       ex=document.createElement('div')
+       ex.id='storage-warning'
+       ex.style.cssText='position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#b3261e;color:#fff;padding:10px 14px;font:14px/1.4 system-ui,sans-serif;font-weight:600;text-align:center'
+       document.body.appendChild(ex)
+     }
+     ex.textContent=msg
+   }catch(e){}
+ }
+
 // ---- persistence ----
  var _loaded=false
- function loadAll(){
+ // 統計已儲存項目數(收藏 + 轉乘)
+ function countSaved(tabs){
+   var n=0
+   ;(tabs||[]).forEach(function(tb){
+     if(!tb)return
+     n+=(tb.favourites?tb.favourites.length:0)
+     n+=(tb.transfers?tb.transfers.length:0)
+   })
+   return n
+ }
+
+ // 讀取並修復儲存資料:只移除損壞項目,唔會誤刪正常收藏
+ function parseStored(txt){
+   if(!txt)return null
    try{
-     var r=localStorage.getItem('hk-bus-v5')
-     if(r){var p=JSON.parse(r);if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;_loaded=true}}
-   }catch(e){}
-   if(!_loaded){
+     var p=JSON.parse(txt)
+     return (p&&typeof p==='object'&&Array.isArray(p.tabs)&&p.tabs.length)?p:null
+   }catch(e){return null}
+ }
+
+ // 修復分頁結構(favourites / transfers 必須係陣列,名稱/id 補齊)
+ function sanitizeTabs(tabs){
+   var out=[]
+   ;(Array.isArray(tabs)?tabs:[]).forEach(function(tb){
+     if(!tb||typeof tb!=='object')return
+     if(!tb.id)tb.id=uid()
+     if(typeof tb.name!=='string'||!tb.name)tb.name='分頁'
+     if(!Array.isArray(tb.favourites))tb.favourites=[]
+     tb.favourites=tb.favourites.filter(function(f){return f&&typeof f==='object'})
+     if(!Array.isArray(tb.transfers))tb.transfers=[]
+     tb.transfers=tb.transfers.filter(function(tr){return tr&&typeof tr==='object'})
+     out.push(tb)
+   })
+   return out
+ }
+
+ function loadAll(){
+   var p=null
+   try{p=parseStored(localStorage.getItem('hk-bus-v5'))}catch(e){}
+   if(!p){
+     // 主資料讀唔到(可能損壞):試最近一次嘅備份
      try{
-       var h=window.location.hash.slice(1)
-       if(h){var p=JSON.parse(decodeURIComponent(h));if(p&&p.tabs&&p.tabs.length){M.tabs=p.tabs;M.activeTabId=p.activeTabId;if(p.collapsed)M.collapsed=p.collapsed;try{localStorage.setItem('hk-bus-v5',h)}catch(e){};_loaded=true}}
+       var bak=parseStored(localStorage.getItem('hk-bus-v5-bak'))
+       if(bak){p=bak;showStorageNotice('主儲存資料讀取失敗,已用最近備份還原。')}
      }catch(e2){}
    }
-   if(!_loaded){
+   if(!p){
+     try{
+       var h=window.location.hash.slice(1)
+       if(h)p=parseStored(decodeURIComponent(h))
+     }catch(e3){}
+   }
+   if(p){
+     M.tabs=sanitizeTabs(p.tabs)
+     M.activeTabId=p.activeTabId
+     if(p.collapsed&&typeof p.collapsed==='object')M.collapsed=p.collapsed
+     M._storedLoaded=true
+     M._storedCount=countSaved(M.tabs)
+     _loaded=true
+   }
+   if(!_loaded||!M.tabs.length){
      var defaultTab=defTab(1)
      M.tabs=[defaultTab]
      M.activeTabId=defaultTab.id
      _loaded=true
    }
-   M.tabs.forEach(function(tb){if(!tb.transfers)tb.transfers=[]})
+   M.tabs=sanitizeTabs(M.tabs)
    var activeTab=M.tabs.find(function(x){return x.id===M.activeTabId})
    if(!activeTab&&M.tabs.length>0)M.activeTabId=M.tabs[0].id
    M._ready=true
+   console.log('[香港巴士] 載入完成:分頁 '+M.tabs.length+' 個,已儲存項目 '+countSaved(M.tabs)+' 個(收藏+轉乘)')
    renderBoard()
    refreshEtas()
  }
 
  function saveAll(){
-   if(!M.tabs||!M.tabs.length)return
-   var data={tabs:M.tabs,activeTabId:M.activeTabId,collapsed:M.collapsed}
-   var s=JSON.stringify(data)
-   try{localStorage.setItem('hk-bus-v5',s)}catch(e){}
+   if(!M.tabs||!M.tabs.length)return false
+   var s
+   try{s=JSON.stringify({tabs:M.tabs,activeTabId:M.activeTabId,collapsed:M.collapsed})}
+   catch(e){console.error('儲存失敗:無法序列化資料',e);return false}
+   // 防呆:如果今次資料完全空白,但原本儲存裏面有嘢,就唔覆蓋(避免一次意外清空所有收藏)
+   if(M._storedLoaded&&countSaved(M.tabs)===0&&(M._storedCount||0)>0){
+     console.error('偵測到空資料,為免清空原有收藏,已停止覆蓋儲存。')
+     showStorageNotice('⚠️ 偵測到資料異常(空資料),為免清空收藏已停止儲存;請重新整理頁面。')
+     return false
+   }
+   try{
+     var prev=null
+     try{prev=localStorage.getItem('hk-bus-v5')}catch(e){}
+     localStorage.setItem('hk-bus-v5',s)
+     // 寫入成功後保留上一版做備份,方便損壞時還原
+     if(prev&&prev!==s){try{localStorage.setItem('hk-bus-v5-bak',prev)}catch(e){}}
+     return true
+   }catch(e){
+     console.error('儲存失敗:',e)
+     showStorageNotice('⚠️ 無法儲存資料(瀏覽器儲存空間可能已滿,或處於私密模式),今次改動唔會保存。')
+     return false
+   }
  }
 
 // 确保 DOM 完全加载后再初始化
