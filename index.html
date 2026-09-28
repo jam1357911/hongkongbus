@@ -20,11 +20,12 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 .tab-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .tab-stations{color:#e53935;font-size:13px;font-weight:600;line-height:1.4}
 .app-version{display:inline-block;margin-left:10px;padding:2px 10px;border-radius:999px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border);font-size:14px;font-weight:700;vertical-align:middle;letter-spacing:.02em}
-.tab-meta{display:flex;justify-content:space-between;gap:12px;align-items:end;margin-bottom:16px}
-.tab-meta .field{flex:1}
+.tab-meta{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px 12px;align-items:end;margin-bottom:16px}
+.tab-meta .field{flex:1 1 240px;min-width:0}
+.tab-meta #storage-status{flex:1 1 100%;margin-top:2px}
 .field{display:flex;flex-direction:column;gap:6px}
 .field span{font-size:14px;font-weight:700;color:var(--text-h)}
-.field input,.section-title input{width:100%;border:1px solid var(--border);border-radius:14px;background:var(--input-bg);color:var(--text-h);padding:10px 14px;font:inherit;font-size:14px}
+.field input,.section-title input{width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--border);border-radius:14px;background:var(--input-bg);color:var(--text-h);padding:10px 14px;font:inherit;font-size:14px}
 .panel-header{margin-bottom:16px}
 .panel-header h2{font-size:18px;color:var(--text-h)}
 .panel-header p{font-size:14px}
@@ -157,7 +158,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 <body>
 <div id="root">
   <div class="app-title">
-  <h1>香港巴士實時到站時間<span class="app-version" id="app-version">v1.0</span></h1>
+  <h1>香港巴士實時到站時間<span class="app-version" id="app-version">v1.1</span></h1>
   <p class="subtitle">獲取九巴、城巴的實時到站數據</p>
 </div>
 <div class="board-panel" id="board">
@@ -220,7 +221,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 
 <script>
 (function(){
-var APP_VERSION='v1.0'
+var APP_VERSION='v1.1'
 var M={tabs:[],activeTabId:'',collapsed:{},selectedRoute:null,selectedDir:null,stops:[],selectedStopId:'',etaMap:{},trEta:{}}
 
 function el(t,c){
