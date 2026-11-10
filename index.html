@@ -221,7 +221,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 
 <script>
 (function(){
-var APP_VERSION='v1.1'
+var APP_VERSION='v1.1.2'
 var M={tabs:[],activeTabId:'',collapsed:{},selectedRoute:null,selectedDir:null,stops:[],selectedStopId:'',etaMap:{},trEta:{}}
 
 function el(t,c){
@@ -289,70 +289,82 @@ function getWeatherIcon(wx){
   return '🌤️'
 }
 
-// 渲染24小时天气（API不提供逐小时数据，显示今天的详细天气）
-function renderHourlyWeather(data,mhw){
-  console.log('=== renderHourlyWeather 被调用 ===')
-  console.log('传入的数据:', data)
-  console.log('传入的 mhw:', mhw)
-  
-  if(!data||!data.weatherForecast||data.weatherForecast.length===0||!mhw){
-    console.log('条件不满足，返回')
-    return
-  }
-  
-  var todayForecast=data.weatherForecast[0]
+// 逐小時天氣數據（Open-Meteo，香港天文台資料不提供逐小時氣溫）
+function getHourlyData(cb){
+  var url='https://api.open-meteo.com/v1/forecast?latitude=22.3193&longitude=114.1694&hourly=temperature_2m,precipitation_probability,weathercode&timezone=Asia%2FHong_Kong&forecast_days=2'
+  fetch(url,{headers:{accept:'application/json'}})
+    .then(function(r){if(!r.ok)throw Error('ERR'+r.status);return r.json()})
+    .then(function(d){
+      var H=d&&d.hourly
+      if(!H||!H.time||!H.time.length){cb(null,null);return}
+      var nowHK=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Hong_Kong'}))
+      var py=nowHK.getFullYear(),pm=('0'+(nowHK.getMonth()+1)).slice(-2),pd=('0'+nowHK.getDate()).slice(-2),ph=('0'+nowHK.getHours()).slice(-2)
+      var nowKey=py+'-'+pm+'-'+pd+'T'+ph
+      var start=-1
+      for(var i=0;i<H.time.length;i++){if(H.time[i].substring(0,13)===nowKey){start=i;break}}
+      if(start<0)start=0
+      var out=[]
+      for(var j=start;j<H.time.length&&out.length<24;j++){
+        out.push({
+          time:H.time[j].substring(11,16),
+          temp:Math.round(H.temperature_2m[j]),
+          pop:H.precipitation_probability?Math.round(H.precipitation_probability[j]):0,
+          code:H.weathercode?H.weathercode[j]:0
+        })
+      }
+      cb(null,out)
+    })
+    .catch(function(e){cb(e,null)})
+}
+
+// WMO 天氣代碼轉圖示
+function wmoIcon(code){
+  if(code===0)return '☀️'
+  if(code===1)return '🌤️'
+  if(code===2)return '⛅'
+  if(code===3)return '☁️'
+  if(code===45||code===48)return '🌫️'
+  if(code>=51&&code<=57)return '🌦️'
+  if(code>=61&&code<=67)return '🌧️'
+  if(code>=71&&code<=77)return '❄️'
+  if(code>=80&&code<=82)return '🌧️'
+  if(code===85||code===86)return '🌨️'
+  if(code>=95)return '⛈️'
+  return '🌤️'
+}
+
+// 渲染24小时天气（逐小时气温與降雨概率）
+function renderHourlyWeather(hourly,mhw){
+  if(!hourly||!hourly.length||!mhw)return
   mhw.innerHTML=''
-  
-  // 创建控制按钮
+
   var toggleBtn=el('button',{
     type:'button',
     cls:'secondary-button',
     style:'margin-bottom:8px;font-size:12px;padding:6px 10px',
     ev:{
       click:function(){
-        // 切换显示/隐藏状态
         var items=document.querySelectorAll('#hourly-weather .hourly-item')
         items.forEach(function(item,index){
           if(index>=8){
             item.style.display=item.style.display==='none'?'block':'none'
           }
         })
-        // 更改按钮文字
         this.textContent=this.textContent==='顯示更多'?'收起':'顯示更多'
       }
     }
   },'顯示更多')
-  
+
   var grid=el('div',{cls:'hourly-weather'})
-  
-  // 创建24个小时时间段
-  var now=new Date()
-  var currentHour=now.getHours()
-  for(var i=currentHour;i<currentHour+24;i++){
-    var hour=i%24
-    var timeStr=(hour<10?'0':'')+hour+':00'
-    
-    // 转换PSR（显著降雨概率）为百分比数值
-    var psrText=''
-    switch(todayForecast.PSR){
-      case '高': psrText='≥70%降雨'; break;
-      case '中高': psrText='55-69%降雨'; break;
-      case '中': psrText='45-54%降雨'; break;
-      case '中低': psrText='30-44%降雨'; break;
-      case '低': psrText='<30%降雨'; break;
-      default: psrText='--%降雨'; break;
-    }
-    
-    // 显示今天的天气信息
-    var item=el('div',{cls:'hourly-item',style:i>=currentHour+8?'display:none':''},
-      el('div',{cls:'hourly-time'},timeStr),
-      el('div',{cls:'hourly-icon'},getWeatherIcon(todayForecast.forecastWeather)),
-      el('div',{cls:'hourly-temp'},todayForecast.forecastMaxtemp.value+'°'),
-      el('div',{cls:'hourly-rain'},psrText)
-    )
-    grid.appendChild(item)
-  }
-  
+  hourly.forEach(function(h,i){
+    grid.appendChild(el('div',{cls:'hourly-item',style:i>=8?'display:none':''},
+      el('div',{cls:'hourly-time'},h.time),
+      el('div',{cls:'hourly-icon'},wmoIcon(h.code)),
+      el('div',{cls:'hourly-temp'},h.temp+'°'),
+      el('div',{cls:'hourly-rain'},h.pop+'%降雨')
+    ))
+  })
+
   mhw.appendChild(toggleBtn)
   mhw.appendChild(grid)
 }
@@ -393,43 +405,32 @@ function renderDailyWeather(data,mdw){
 
 // 加载天气数据
 function loadWeather(){
-  // 动态获取天气组件的 DOM 元素
   var mwp=document.getElementById('weather-panel')
   var mhw=document.getElementById('hourly-weather')
   var mdw=document.getElementById('daily-weather')
-  
-  console.log('=== loadWeather 被调用 ===')
-  console.log('weather-panel DOM 元素:', mwp)
-  console.log('hourly-weather DOM 元素:', mhw)
-  console.log('daily-weather DOM 元素:', mdw)
-  
+
   if(!mwp || !mhw || !mdw){
     console.error('天气组件 DOM 元素未找到')
     return
   }
-  
+
+  mhw.innerHTML='<p class="muted">載入逐小時天氣中...</p>'
+
+  getHourlyData(function(eh,hourly){
+    if(eh||!hourly){
+      mhw.innerHTML='<p class="muted">暫時無法載入逐小時天氣</p>'
+    }else{
+      renderHourlyWeather(hourly,mhw)
+    }
+  })
+
   getWeatherData(function(err,data){
-    console.log('=== getWeatherData 回调 ===')
-    
     if(err){
-      console.error('获取天气数据失败:', err)
-      mwp.innerHTML='<div class="empty-card"><h3>無法載入天氣數據</h3><p>請檢查網絡連線</p></div>'
+      mdw.innerHTML='<div class="empty-card"><h3>無法載入天氣數據</h3><p>請檢查網絡連線</p></div>'
       return
     }
-    
-    console.log('天气数据获取成功')
-    console.log('天气数据:', data)
-    
-    try {
-      renderHourlyWeather(data,mhw)
-      console.log('renderHourlyWeather 调用成功')
-    } catch (error) {
-      console.error('renderHourlyWeather 调用失败:', error)
-    }
-    
     try {
       renderDailyWeather(data,mdw)
-      console.log('renderDailyWeather 调用成功')
     } catch (error) {
       console.error('renderDailyWeather 调用失败:', error)
     }
