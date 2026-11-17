@@ -221,7 +221,7 @@ body{font:16px/1.45 system-ui,sans-serif;background:var(--panel-bg);color:var(--
 
 <script>
 (function(){
-var APP_VERSION='v1.1.2'
+var APP_VERSION='v1.1.4'
 var M={tabs:[],activeTabId:'',collapsed:{},selectedRoute:null,selectedDir:null,stops:[],selectedStopId:'',etaMap:{},trEta:{}}
 
 function el(t,c){
@@ -257,17 +257,55 @@ var mr=Q('result-list'),md=Q('dir-block'),mdr=Q('dir-list'),ms=Q('stop-block'),m
 var mtb=Q('tabs-bar'),mtn=Q('tab-name'),mfg=Q('favourite-grid'),mfp=Q('fastest-panel'),mfgg=Q('fastest-grid'),mrb=Q('rename-btn')
  var bs=Q('bulk-stop-search'),brs=Q('bulk-stop-results'),bab=Q('bulk-add-btn')
 
+// 抓 JSON：加逾時 + 自動重試
+// 公開天氣 API 偶爾會「連得上但唔回應」(TCP 通、TLS 停住)，單次 fetch 就會直接失敗，
+// 而 fetch 本身冇預設逾時，所以一定要自己 abort + 重試。
+function fetchJSON(url,opts){
+  opts=opts||{}
+  var timeout=opts.timeout||9000
+  var retries=opts.retries==null?2:opts.retries
+  function once(attempt){
+    return new Promise(function(resolve,reject){
+      var settled=false
+      var ctl=(typeof AbortController!=='undefined')?new AbortController():null
+      var timer=null
+      function fail(e){
+        if(settled)return
+        settled=true
+        if(timer)clearTimeout(timer)
+        if(attempt<retries){
+          console.warn('抓取失敗，第 '+(attempt+1)+' 次重試：'+url+'（'+(e&&(e.message||e.name))+'）')
+          setTimeout(function(){once(attempt+1).then(resolve,reject)},700*(attempt+1))
+        }else{
+          reject(e)
+        }
+      }
+      timer=setTimeout(function(){
+        try{if(ctl)ctl.abort()}catch(e){}
+        fail(Error('TIMEOUT'))
+      },timeout)
+      // 唔好加 cache:'no-store'：瀏覽器會因此加上 Pragma 請求標頭，
+      // 令跨網域請求變成要先 preflight(OPTIONS)，反而多一個失敗位。
+      fetch(url,{headers:{accept:'application/json'},signal:ctl?ctl.signal:undefined})
+        .then(function(r){if(!r.ok)throw Error('ERR'+r.status);return r.json()})
+        .then(function(d){
+          if(settled)return
+          settled=true
+          if(timer)clearTimeout(timer)
+          resolve(d)
+        })
+        .catch(fail)
+    })
+  }
+  return once(0)
+}
+
 // 天气数据获取函数
 function getWeatherData(cb){
   // 使用香港天文台的天气API
   var url='https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=fnd&lang=tc'
   console.log('開始獲取天氣數據:', url)
-  fetch(url,{headers:{accept:'application/json'}})
-    .then(function(r){
-      console.log('响应状态:', r.status, r.statusText)
-      if(!r.ok)throw Error('ERR'+r.status+' - '+r.statusText)
-      return r.json()
-    })
+  fetchJSON(url,{timeout:8000,retries:1})
     .then(function(d){
       console.log('獲取天氣數據成功:', d)
       cb(null,d)
@@ -289,32 +327,147 @@ function getWeatherIcon(wx){
   return '🌤️'
 }
 
-// 逐小時天氣數據（Open-Meteo，香港天文台資料不提供逐小時氣溫）
-function getHourlyData(cb){
+// 逐小時天氣數據
+// 香港天文台嘅開放數據冇逐小時氣溫，所以用第三方，並且做兩層來源：
+//   1) Open-Meteo  — 有氣溫 + 降雨概率 + WMO 天氣碼
+//   2) MET Norway  — 挪威氣象局；有氣溫 + 每小時雨量，但冇降雨概率
+// 任何一個成功就用；全部失敗先用快取，最後先顯示錯誤，避免面板一片空白。
+var HOURLY_CACHE_KEY='hk-bus-hourly-v2'
+var HOURLY_CACHE_MAX_AGE=6*60*60*1000 // 快取最多當 6 小時，再舊就唔顯示（避免當成現況）
+
+// 香港時間嘅 "YYYY-MM-DDTHH"（香港無夏令時間，直接 UTC+8 計最穩陣）
+function hkHourKey(ms){
+  var d=new Date((ms||Date.now())+8*60*60*1000)
+  return d.getUTCFullYear()+'-'+('0'+(d.getUTCMonth()+1)).slice(-2)+'-'+('0'+d.getUTCDate()).slice(-2)+'T'+('0'+d.getUTCHours()).slice(-2)
+}
+
+// 時間戳 -> 香港時間 "HH:MM"
+function hkTimeLabel(ms){
+  var d=new Date(ms+8*60*60*1000)
+  return ('0'+d.getUTCHours()).slice(-2)+':'+('0'+d.getUTCMinutes()).slice(-2)
+}
+
+function readHourlyCache(){
+  try{
+    var o=JSON.parse(localStorage.getItem(HOURLY_CACHE_KEY)||'null')
+    if(o&&o.rows&&o.rows.length)return o
+  }catch(e){}
+  return null
+}
+
+function writeHourlyCache(rows,source){
+  try{
+    localStorage.setItem(HOURLY_CACHE_KEY,JSON.stringify({t:Date.now(),source:source||'',rows:rows}))
+    try{localStorage.removeItem('hk-bus-hourly-v1')}catch(e2){} // 清走舊格式快取
+  }catch(e){}
+}
+
+// --- 來源 1：Open-Meteo ---
+function fetchOpenMeteo(){
   var url='https://api.open-meteo.com/v1/forecast?latitude=22.3193&longitude=114.1694&hourly=temperature_2m,precipitation_probability,weathercode&timezone=Asia%2FHong_Kong&forecast_days=2'
-  fetch(url,{headers:{accept:'application/json'}})
-    .then(function(r){if(!r.ok)throw Error('ERR'+r.status);return r.json()})
-    .then(function(d){
-      var H=d&&d.hourly
-      if(!H||!H.time||!H.time.length){cb(null,null);return}
-      var nowHK=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Hong_Kong'}))
-      var py=nowHK.getFullYear(),pm=('0'+(nowHK.getMonth()+1)).slice(-2),pd=('0'+nowHK.getDate()).slice(-2),ph=('0'+nowHK.getHours()).slice(-2)
-      var nowKey=py+'-'+pm+'-'+pd+'T'+ph
-      var start=-1
-      for(var i=0;i<H.time.length;i++){if(H.time[i].substring(0,13)===nowKey){start=i;break}}
-      if(start<0)start=0
-      var out=[]
-      for(var j=start;j<H.time.length&&out.length<24;j++){
-        out.push({
-          time:H.time[j].substring(11,16),
-          temp:Math.round(H.temperature_2m[j]),
-          pop:H.precipitation_probability?Math.round(H.precipitation_probability[j]):0,
-          code:H.weathercode?H.weathercode[j]:0
-        })
-      }
-      cb(null,out)
+  return fetchJSON(url,{timeout:8000,retries:1}).then(function(d){
+    var H=d&&d.hourly
+    if(!H||!H.time||!H.time.length)throw Error('EMPTY')
+    var codes=H.weather_code||H.weathercode||[] // 新舊參數名都接受
+    var key=hkHourKey()
+    var start=-1,i,j
+    for(i=0;i<H.time.length;i++){if(String(H.time[i]).substring(0,13)===key){start=i;break}}
+    if(start<0){
+      var nowISO=new Date(Date.now()+8*60*60*1000).toISOString().substring(0,13)
+      for(i=0;i<H.time.length;i++){if(String(H.time[i]).substring(0,13)>=nowISO){start=i;break}}
+    }
+    if(start<0)start=0
+    var out=[]
+    for(j=start;j<H.time.length&&out.length<24;j++){
+      var t=H.temperature_2m?H.temperature_2m[j]:null
+      if(t==null||isNaN(t))continue
+      var p=H.precipitation_probability?H.precipitation_probability[j]:null
+      out.push({
+        time:String(H.time[j]).substring(11,16),
+        temp:Math.round(t),
+        rain:(p==null||isNaN(p))?'降雨 --':Math.round(p)+'%降雨',
+        icon:wmoIcon(codes[j]==null?0:codes[j])
+      })
+    }
+    if(!out.length)throw Error('EMPTY')
+    return {source:'Open-Meteo',rows:out}
+  })
+}
+
+// MET Norway 嘅 symbol_code（例如 'clearsky_day'、'lightrain'）轉圖示
+function metSymbolIcon(sym){
+  var s=String(sym||'')
+  if(/thunder/.test(s))return '⛈️'
+  if(/sleet/.test(s))return '🌨️'
+  if(/snow/.test(s))return '❄️'
+  if(/fog/.test(s))return '🌫️'
+  if(/drizzle/.test(s))return '🌦️'
+  if(/lightrain/.test(s))return '🌦️'
+  if(/rain|shower/.test(s))return '🌧️'
+  if(/partlycloudy/.test(s))return '⛅'
+  if(/cloudy/.test(s))return '☁️'
+  if(/fair/.test(s))return '🌤️'
+  if(/clearsky/.test(s))return '☀️'
+  return '🌤️'
+}
+
+// --- 來源 2：MET Norway（冇降雨概率，所以顯示每小時雨量）---
+function fetchMetNo(){
+  var url='https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=22.32&lon=114.17'
+  return fetchJSON(url,{timeout:8000,retries:1}).then(function(d){
+    var ts=d&&d.properties&&d.properties.timeseries
+    if(!ts||!ts.length)throw Error('EMPTY')
+    var nowH=Math.floor(Date.now()/3600000)*3600000
+    var out=[]
+    for(var i=0;i<ts.length&&out.length<24;i++){
+      var t=Date.parse(String(ts[i].time))
+      if(isNaN(t)||t<nowH-1800000)continue // 跳過過去嘅時段
+      var data=ts[i].data||{}
+      var inst=data.instant&&data.instant.details
+      var temp=inst?inst.air_temperature:null
+      if(temp==null||isNaN(temp))continue
+      var n1=data.next_1_hours||{}
+      var amt=(n1.details&&n1.details.precipitation_amount!=null)?n1.details.precipitation_amount:null
+      out.push({
+        time:hkTimeLabel(t),
+        temp:Math.round(temp),
+        rain:(amt==null)?'降雨 --':(amt>0?('降雨 '+amt+'mm'):'無雨'),
+        icon:metSymbolIcon(n1.summary&&n1.summary.symbol_code)
+      })
+    }
+    if(!out.length)throw Error('EMPTY')
+    return {source:'MET Norway',rows:out}
+  })
+}
+
+var HOURLY_SOURCES=[
+  {name:'Open-Meteo',fetch:fetchOpenMeteo},
+  {name:'MET Norway',fetch:fetchMetNo}
+]
+
+// cb(err, rows, meta)；meta={cached:bool, at:時間戳, source:來源名}
+function getHourlyData(cb){
+  var i=0
+  var lastErr=null
+  function giveUp(){
+    console.error('所有逐小時天氣來源都失敗:',lastErr)
+    var c=readHourlyCache()
+    if(c&&Date.now()-c.t<HOURLY_CACHE_MAX_AGE)cb(null,c.rows,{cached:true,at:c.t,source:c.source||''})
+    else cb(lastErr||Error('NO_SOURCE'),null,c?{cached:true,at:c.t,source:c.source||''}:null)
+  }
+  function tryNext(){
+    if(i>=HOURLY_SOURCES.length){giveUp();return}
+    var src=HOURLY_SOURCES[i++]
+    src.fetch().then(function(res){
+      writeHourlyCache(res.rows,res.source)
+      cb(null,res.rows,{cached:false,at:Date.now(),source:res.source})
+    }).catch(function(e){
+      console.warn('逐小時天氣來源失敗：'+src.name+'（'+(e&&e.message)+'），試下一個')
+      lastErr=e
+      tryNext()
     })
-    .catch(function(e){cb(e,null)})
+  }
+  tryNext()
 }
 
 // WMO 天氣代碼轉圖示
@@ -334,8 +487,9 @@ function wmoIcon(code){
 }
 
 // 渲染24小时天气（逐小时气温與降雨概率）
-function renderHourlyWeather(hourly,mhw){
+function renderHourlyWeather(hourly,mhw,meta){
   if(!hourly||!hourly.length||!mhw)return
+  meta=meta||{}
   mhw.innerHTML=''
 
   var toggleBtn=el('button',{
@@ -359,14 +513,21 @@ function renderHourlyWeather(hourly,mhw){
   hourly.forEach(function(h,i){
     grid.appendChild(el('div',{cls:'hourly-item',style:i>=8?'display:none':''},
       el('div',{cls:'hourly-time'},h.time),
-      el('div',{cls:'hourly-icon'},wmoIcon(h.code)),
+      el('div',{cls:'hourly-icon'},h.icon||'🌤️'),
       el('div',{cls:'hourly-temp'},h.temp+'°'),
-      el('div',{cls:'hourly-rain'},h.pop+'%降雨')
+      el('div',{cls:'hourly-rain'},h.rain||'降雨 --')
     ))
   })
 
   mhw.appendChild(toggleBtn)
   mhw.appendChild(grid)
+
+  var when=meta.at?new Date(meta.at).toLocaleTimeString('zh-HK',{hour:'2-digit',minute:'2-digit',hour12:false}):''
+  if(meta.cached){
+    mhw.appendChild(el('div',{cls:'muted',style:'font-size:11px;margin-top:6px'},'⚠️ 暫時連唔到天氣伺服器，顯示上次更新（'+when+'）嘅資料'))
+  }else if(when){
+    mhw.appendChild(el('div',{cls:'muted',style:'font-size:11px;margin-top:6px'},'逐小時預報：'+(meta.source||'網上天氣資料')+' · 更新 '+when))
+  }
 }
 
 // 渲染5天天气
@@ -414,14 +575,31 @@ function loadWeather(){
     return
   }
 
-  mhw.innerHTML='<p class="muted">載入逐小時天氣中...</p>'
+  // 有上次成功嘅逐小時資料就即刻顯示，唔使乾等或者一開就見錯誤字
+  var cached=readHourlyCache()
+  if(cached&&Date.now()-cached.t<HOURLY_CACHE_MAX_AGE){
+    // 呢一步只係「先畫舊資料」，所以唔出警告；真正抓取失敗先會出警告
+    renderHourlyWeather(cached.rows,mhw,{cached:false,at:cached.t})
+  }else{
+    mhw.innerHTML='<p class="muted">載入逐小時天氣中...</p>'
+  }
 
-  getHourlyData(function(eh,hourly){
-    if(eh||!hourly){
-      mhw.innerHTML='<p class="muted">暫時無法載入逐小時天氣</p>'
-    }else{
-      renderHourlyWeather(hourly,mhw)
+  getHourlyData(function(eh,hourly,meta){
+    if(eh||!hourly||!hourly.length){
+      mhw.innerHTML=''
+      mhw.appendChild(el('p',{cls:'muted'},'暫時無法載入逐小時天氣'))
+      if(meta&&meta.at){
+        mhw.appendChild(el('p',{cls:'muted',style:'font-size:11px;margin-top:4px'},
+          '上次成功更新：'+new Date(meta.at).toLocaleString('zh-HK',{hour12:false})))
+      }
+      mhw.appendChild(el('button',{
+        type:'button',cls:'secondary-button',
+        style:'margin-top:8px;font-size:12px;padding:6px 10px',
+        ev:{click:function(){loadWeather()}}
+      },'重試'))
+      return
     }
+    renderHourlyWeather(hourly,mhw,meta)
   })
 
   getWeatherData(function(err,data){
